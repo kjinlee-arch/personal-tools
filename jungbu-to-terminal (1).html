@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>중부경찰서 → 고속버스터미널</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0d0b;
+    --panel: #10140f;
+    --panel-edge: #1c2318;
+    --led-green: #35ff6f;
+    --led-green-dim: #1f8f42;
+    --led-amber: #ffb020;
+    --led-amber-dim: #8f6512;
+    --led-red: #ff4d4d;
+    --led-red-dim: #8f2b2b;
+    --text-soft: #7c8c7e;
+    --text-faint: #3f4a41;
+    --hairline: #202920;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(53,255,111,0.06), transparent 60%);
+    color: var(--led-green);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    padding: 22px 14px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{ max-width: 480px; margin: 0 auto; }
+
+  /* header — mimics the physical board title bar */
+  .board-header{
+    background: linear-gradient(180deg, #17301f, #0e1f13);
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .board-header::after{
+    content:"";
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(180deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+    opacity:0.4;
+  }
+  .route-eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--led-green-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .route-title{
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--led-green);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    line-height:1.4;
+    text-shadow: 0 0 14px rgba(53,255,111,0.35);
+  }
+  .route-title .stop{ white-space:nowrap; }
+  .route-title .arrow{ color: var(--text-soft); font-weight:400; }
+  .route-sub{
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-soft);
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  /* tier sections */
+  .tier{
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .tier-head{
+    padding: 11px 14px;
+    display:flex;
+    align-items:baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .tier-label{
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+  }
+  .tier-note{
+    font-size: 11px;
+    color: var(--text-soft);
+    font-family:'JetBrains Mono', monospace;
+  }
+  .tier--go .tier-label{ color: var(--led-green); }
+  .tier--slow .tier-label{ color: var(--led-amber); }
+  .tier--no .tier-label{ color: var(--led-red); }
+
+  .chip-grid{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px;
+  }
+  .chip{
+    font-family:'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 17px;
+    padding: 8px 13px;
+    border-radius: 6px;
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+  .tier--go .chip{
+    color: var(--led-green);
+    border: 1px solid var(--led-green-dim);
+    background: rgba(53,255,111,0.06);
+  }
+  .tier--go .chip.verified{
+    box-shadow: inset 0 0 0 1px rgba(53,255,111,0.5);
+    background: rgba(53,255,111,0.12);
+  }
+  .tier--slow .chip{
+    color: var(--led-amber);
+    border: 1px solid var(--led-amber-dim);
+    background: rgba(255,176,32,0.07);
+  }
+  .tier--no .chip{
+    color: var(--led-red);
+    border: 1px solid var(--led-red-dim);
+    background: rgba(255,77,77,0.07);
+    text-decoration: line-through;
+    text-decoration-color: var(--led-red-dim);
+  }
+
+  .tier-detail{
+    padding: 0 14px 14px;
+    font-size: 12.5px;
+    color: var(--text-soft);
+    line-height: 1.5;
+  }
+  .tier-detail b{ color: inherit; font-weight:600; }
+
+  .legend{
+    margin-top: 18px;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-family:'JetBrains Mono', monospace;
+    line-height: 1.8;
+    padding: 0 4px;
+  }
+  .legend .dot{
+    display:inline-block;
+    width: 7px; height:7px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .legend .dot.g{ background: var(--led-green); }
+  .legend .dot.a{ background: var(--led-amber); }
+  .legend .dot.r{ background: var(--led-red); }
+
+  .footer-note{
+    margin-top: 18px;
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="board-header">
+      <div class="route-eyebrow">경유노선 안내 · 창원버스정보시스템 기준</div>
+      <div class="route-title">
+        <span class="stop">중부경찰서</span>
+        <span class="arrow">→</span>
+        <span class="stop">고속버스터미널</span>
+      </div>
+      <div class="route-sub">300114 → 421902 · 도보 X, 버스 전용</div>
+    </div>
+
+    <div class="tier tier--go">
+      <div class="tier-head">
+        <span class="tier-label">직행 — 탑승 OK</span>
+        <span class="tier-note">14 verified</span>
+      </div>
+      <div class="chip-grid">
+        <span class="chip verified">20</span>
+        <span class="chip verified">21</span>
+        <span class="chip verified">22</span>
+        <span class="chip verified">23</span>
+        <span class="chip verified">40</span>
+        <span class="chip verified">41</span>
+        <span class="chip verified">42</span>
+        <span class="chip verified">44</span>
+        <span class="chip verified">45</span>
+        <span class="chip verified">50</span>
+        <span class="chip verified">61</span>
+        <span class="chip verified">62</span>
+        <span class="chip verified">64</span>
+        <span class="chip verified">64-1</span>
+        <span class="chip">65</span>
+        <span class="chip">72</span>
+        <span class="chip">73</span>
+        <span class="chip">74</span>
+        <span class="chip">75</span>
+        <span class="chip">76</span>
+        <span class="chip">78</span>
+        <span class="chip">109</span>
+      </div>
+      <div class="tier-detail">
+        경유: 경동메르빌APT → 마산합포구청.의료원 → 경남데파트 → KT마산점 → 어시장 → 오동동 → 자유무역지역정문 → 합포동 → 산호동 → 신세계백화점 → <b>고속버스터미널</b><br>
+        <b>진하게 표시된 14개 노선</b>은 노선검색으로 정류장 순서 직접 확인 완료. 나머지는 동일 경로상의 같은 노선군.
+      </div>
+    </div>
+
+    <div class="tier tier--slow">
+      <div class="tier-head">
+        <span class="tier-label">우회 — 급할 때만</span>
+        <span class="tier-note">verified</span>
+      </div>
+      <div class="chip-grid">
+        <span class="chip">106</span>
+      </div>
+      <div class="tier-detail">
+        어시장 이후 <b>창원NC파크(야구장)</b> 경유했다가 되돌아와서 터미널 도착. 결국 도착은 하지만 훨씬 느림 — 다른 노선 없을 때만.
+      </div>
+    </div>
+
+    <div class="tier tier--no">
+      <div class="tier-head">
+        <span class="tier-label">불가 — 터미널 안 감</span>
+        <span class="tier-note">verified</span>
+      </div>
+      <div class="chip-grid">
+        <span class="chip">53</span>
+        <span class="chip">100</span>
+      </div>
+      <div class="tier-detail">
+        중부경찰서·NC파크 정류장엔 있지만 <b>고속버스터미널 통과노선 목록에 없음</b>. 야구장 방향으로 빠짐 — 절대 타지 말 것.
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="dot g"></span>직행: 어시장→신세계백화점→터미널 직선 경로<br>
+      <span class="dot a"></span>우회: 야구장 경유 후 터미널 도착<br>
+      <span class="dot r"></span>불가: 터미널 미경유, 탑승 금지
+    </div>
+
+    <div class="footer-note">2026-08-27 기준 · 정류소 상세 재확인 시 갱신 필요</div>
+  </div>
+</body>
+</html>
