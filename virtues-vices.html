@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1c1b19;
+    --surface: #242220;
+    --surface-raised: #2b2926;
+    --hairline: #3a3733;
+    --chalk: #ede8de;
+    --chalk-dim: #9c958a;
+    --rust: #c4622d;
+    --rust-dim: #7a4522;
+    --olive: #7a8b5c;
+    --steel: #5c7a8b;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    font-family:'Inter',sans-serif; color:var(--chalk);
+    min-height:100vh; padding: 20px 16px 48px;
+    display:flex; justify-content:center;
+  }
+  .app{ width:100%; max-width:480px; }
+
+  header{ display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--chalk-dim); margin:0 0 2px;
+  }
+  h1{ font-family:'Oswald',sans-serif; font-weight:600; font-size:28px; margin:0; color:var(--chalk); }
+  .date-badge{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--chalk-dim); text-align:right; line-height:1.5; }
+
+  .week-strip{ display:flex; gap:6px; margin-bottom:18px; }
+  .week-strip .day-dot{ flex:1; height:5px; border-radius:3px; background:var(--hairline); }
+  .week-strip .day-dot.done-a{ background:var(--rust); }
+  .week-strip .day-dot.done-b{ background:var(--steel); }
+  .week-strip .day-dot.today{ outline:1px solid var(--chalk-dim); outline-offset:2px; }
+
+  /* ---- top-level nav ---- */
+  .nav-main{ display:flex; gap:8px; margin-bottom:10px; }
+  .nav-main button{
+    flex:1; font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:0.05em;
+    padding:12px 0; border-radius:10px; border:1px solid var(--hairline);
+    background:var(--surface); color:var(--chalk-dim); cursor:pointer;
+  }
+  .nav-main button.active-virtues{ background:var(--olive); border-color:var(--olive); color:#1c1b19; font-weight:600; }
+  .nav-main button.active-vices{ background:var(--rust); border-color:var(--rust); color:#1c1b19; font-weight:600; }
+
+  .nav-sub{ display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+  .nav-sub button{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
+    padding:8px 12px; border-radius:999px; border:1px solid var(--hairline);
+    background:transparent; color:var(--chalk-dim); cursor:pointer;
+  }
+  .nav-sub button.active{ background:var(--surface-raised); color:var(--chalk); border-color:var(--chalk-dim); }
+
+  .section{ display:none; }
+  .section.active{ display:block; }
+
+  .section-title{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--chalk-dim); margin:0 0 10px 2px;
+  }
+
+  /* ---- day toggle (exercise) ---- */
+  .day-toggle{ display:flex; background:var(--surface); border:1px solid var(--hairline); border-radius:999px; padding:4px; margin-bottom:16px; }
+  .day-toggle button{
+    flex:1; border:none; background:transparent; color:var(--chalk-dim);
+    font-family:'Oswald',sans-serif; font-size:14px; letter-spacing:0.06em;
+    padding:10px 0; border-radius:999px; cursor:pointer; transition: background .15s ease, color .15s ease;
+  }
+  .day-toggle button.active-a{ background:var(--rust); color:#1c1b19; font-weight:600; }
+  .day-toggle button.active-b{ background:var(--steel); color:#1c1b19; font-weight:600; }
+
+  /* ---- generic tally card (pushups, archive) ---- */
+  .tally-card{ background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); padding:20px 18px 18px; margin-bottom:14px; }
+  .tally-card .label-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; gap:10px; }
+  .tally-card .label{ font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:0.04em; color:var(--chalk); background:transparent; border:none; outline:none; padding:0; flex:1; min-width:0; }
+  .tally-card .sub{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); white-space:nowrap; }
+  .plate-row{ display:flex; align-items:center; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .plate{
+    width:34px; height:34px; border-radius:50%; border:3px solid var(--hairline);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--chalk-dim); flex-shrink:0;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .plate.filled{ border-color:var(--rust); background: radial-gradient(circle at 35% 30%, var(--rust) 0%, var(--rust-dim) 100%); color:#1c1b19; font-weight:700; }
+  .tally-count{ display:flex; align-items:baseline; gap:8px; margin-bottom:16px; }
+  .tally-count .num{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:40px; color:var(--chalk); line-height:1; }
+  .tally-count .unit{ font-size:13px; color:var(--chalk-dim); }
+  .tally-btns{ display:flex; gap:8px; }
+  .tally-btns button{
+    font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:0.03em; border:1px solid var(--hairline);
+    background:var(--surface-raised); color:var(--chalk); border-radius:10px; padding:11px 0; flex:1; cursor:pointer;
+  }
+  .tally-btns button.plus{ font-weight:600; }
+  .tally-card.rust .tally-btns button.plus{ background:var(--rust); color:#1c1b19; border-color:var(--rust); }
+  .tally-card.olive .tally-btns button.plus{ background:var(--olive); color:#1c1b19; border-color:var(--olive); }
+  .tally-btns button:active{ transform:scale(0.96); }
+  .tally-btns button.minus{ flex:0 0 52px; }
+  .tally-remove{ background:transparent; border:none; color:var(--chalk-dim); font-size:16px; cursor:pointer; padding:2px 4px; flex-shrink:0; }
+
+  /* ---- exercise list ---- */
+  .exercise{ background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); padding:14px; margin-bottom:10px; display:flex; align-items:center; gap:12px; }
+  .exercise.complete{ border-color: var(--olive); }
+  .ex-main{ flex:1; min-width:0; }
+  .ex-name{ font-family:'Oswald',sans-serif; font-size:16px; color:var(--chalk); background:transparent; border:none; width:100%; padding:0; outline:none; }
+  .ex-target{ display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
+  .ex-target span{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); }
+  .ex-target input{ width:32px; background:transparent; border:none; border-bottom:1px solid var(--hairline); color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:11px; text-align:center; outline:none; }
+  .ex-target .divider{ color:var(--hairline); margin:0 2px; }
+  .ex-target .weight-input{ width:38px; }
+  .ex-counter{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .ex-counter button{ width:34px; height:34px; border-radius:8px; border:1px solid var(--hairline); background:var(--surface-raised); color:var(--chalk); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .ex-counter button.add{ background:var(--rust); border-color:var(--rust); color:#1c1b19; font-weight:700; }
+  .exercise.complete .ex-counter button.add{ background:var(--olive); border-color:var(--olive); }
+  .ex-counter button:active{ transform:scale(0.94); }
+  .ex-sets{ font-family:'JetBrains Mono',monospace; font-size:15px; color:var(--chalk); min-width:34px; text-align:center; }
+
+  .ghost-btn{
+    width:100%; background:transparent; border:1px dashed var(--hairline); color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.05em; text-transform:uppercase;
+    border-radius:var(--radius); padding:12px 0; cursor:pointer; margin-bottom:20px;
+  }
+
+  /* ---- inline add-forms (reused for drink / book / category / expense) ---- */
+  .card-wrap{ background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); padding:18px; margin-bottom:20px; }
+  .card-wrap .label-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .card-wrap .label{ font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:0.04em; color:var(--chalk); }
+  .card-wrap .streak{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--olive); }
+  .totals-row{ display:flex; justify-content:space-between; align-items:baseline; padding:12px 0 4px; }
+  .totals-row .big{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:26px; color:var(--chalk); }
+  .totals-row .big-unit{ font-size:11px; color:var(--chalk-dim); margin-left:5px; }
+  .totals-row .sidenote{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); text-align:right; }
+
+  .list-entry{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--hairline); }
+  .list-entry:last-child{ border-bottom:none; }
+  .list-entry-info{ flex:1; min-width:0; }
+  .list-entry-name{ font-family:'Oswald',sans-serif; font-size:14px; color:var(--chalk); }
+  .list-entry-meta{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-top:2px; }
+  .list-entry-remove{ background:transparent; border:none; color:var(--chalk-dim); font-size:18px; line-height:1; cursor:pointer; padding:4px 6px 4px 12px; flex-shrink:0; }
+
+  .add-toggle{
+    width:100%; background:transparent; border:1px dashed var(--hairline); color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    border-radius:10px; padding:11px 0; cursor:pointer; margin-top:8px;
+  }
+  .inline-form{ margin-top:14px; padding-top:14px; border-top:1px solid var(--hairline); display:none; }
+  .inline-form.open{ display:block; }
+  .form-row{ margin-bottom:10px; }
+  .form-row label{ display:block; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--chalk-dim); margin-bottom:5px; }
+  .form-row select, .form-row input{
+    width:100%; background:var(--surface-raised); border:1px solid var(--hairline); border-radius:8px;
+    color:var(--chalk); font-family:'Inter',sans-serif; font-size:14px; padding:9px 10px; outline:none;
+  }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .form-preview{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--olive); margin:2px 0 14px; }
+  .form-btns{ display:flex; gap:8px; }
+  .form-btns button{ flex:1; font-family:'Oswald',sans-serif; font-size:14px; padding:11px 0; border-radius:8px; border:1px solid var(--hairline); cursor:pointer; }
+  .form-btns .confirm{ background:var(--rust); border-color:var(--rust); color:#1c1b19; font-weight:600; }
+  .form-btns .confirm.olive{ background:var(--olive); border-color:var(--olive); }
+  .form-btns .cancel{ background:transparent; color:var(--chalk-dim); }
+
+  /* ---- reading ---- */
+  .book-card{ background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); padding:14px; margin-bottom:10px; }
+  .book-card.complete{ border-color:var(--olive); }
+  .book-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .book-title{ font-family:'Oswald',sans-serif; font-size:15px; color:var(--chalk); background:transparent; border:none; width:100%; outline:none; flex:1; min-width:0; }
+  .book-progress-bar{ height:6px; background:var(--hairline); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+  .book-progress-fill{ height:100%; background:var(--steel); }
+  .book-card.complete .book-progress-fill{ background:var(--olive); }
+  .book-meta{ display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); margin-bottom:10px; }
+  .book-actions{ display:flex; gap:6px; align-items:center; }
+  .book-actions button{ font-family:'JetBrains Mono',monospace; font-size:12px; border:1px solid var(--hairline); background:var(--surface-raised); color:var(--chalk); border-radius:8px; padding:9px 0; flex:1; cursor:pointer; }
+  .book-actions button.add{ background:var(--steel); border-color:var(--steel); color:#1c1b19; font-weight:600; }
+  .book-actions button:active{ transform:scale(0.95); }
+  .book-actions input{
+    width:52px; background:var(--surface-raised); border:1px solid var(--hairline); border-radius:8px;
+    color:var(--chalk); font-family:'JetBrains Mono',monospace; font-size:12px; text-align:center; padding:9px 4px; outline:none; flex-shrink:0;
+  }
+
+  /* ---- notes ---- */
+  .note-entry{ padding:10px 0; border-bottom:1px solid var(--hairline); display:flex; justify-content:space-between; gap:8px; }
+  .note-entry:last-child{ border-bottom:none; }
+  .note-body{ flex:1; min-width:0; }
+  .note-time{ font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--chalk-dim); margin-bottom:2px; }
+  .note-text{ font-size:14px; color:var(--chalk); }
+
+  .export-btn{
+    width:100%; background:var(--surface); border:1px solid var(--hairline); color:var(--chalk-dim);
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+    border-radius:var(--radius); padding:13px 0; cursor:pointer; margin-bottom:14px;
+  }
+  .export-btn:active{ transform:scale(0.98); }
+
+  footer{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--hairline); letter-spacing:0.08em; padding-top:6px; }
+
+  .toast{
+    position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px);
+    background:var(--surface-raised); border:1px solid var(--hairline); color:var(--chalk);
+    font-family:'JetBrains Mono',monospace; font-size:12px; padding:10px 16px; border-radius:999px;
+    opacity:0; pointer-events:none; transition: opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div>
+      <p class="eyebrow">Home Rig &middot; Masan</p>
+      <h1>Ledger</h1>
+    </div>
+    <div class="date-badge" id="dateBadge">&mdash;</div>
+  </header>
+
+  <div class="week-strip" id="weekStrip"></div>
+
+  <div class="nav-main" id="navMain">
+    <button id="btnVirtues">VIRTUES</button>
+    <button id="btnVices">VICES</button>
+  </div>
+  <div class="nav-sub" id="navSub"></div>
+
+  <!-- ============ VIRTUES: EXERCISE ============ -->
+  <div class="section" id="sectionExercise">
+    <div class="day-toggle" id="dayToggle">
+      <button id="btnDayA">DAY A</button>
+      <button id="btnDayB">DAY B</button>
+    </div>
+
+    <div class="tally-card rust">
+      <div class="label-row">
+        <span class="label" style="flex:none;">Push-up GTG</span>
+        <span class="sub">grease the groove</span>
+      </div>
+      <div class="plate-row" id="plateRow"></div>
+      <div class="tally-count">
+        <span class="num" id="pushupNum">0</span>
+        <span class="unit">reps today</span>
+      </div>
+      <div class="tally-btns">
+        <button class="minus" id="pushupMinus">&minus;5</button>
+        <button class="plus" id="pushupPlus5">+5</button>
+        <button class="plus" id="pushupPlus10">+10</button>
+      </div>
+    </div>
+
+    <p class="section-title">Today's Session</p>
+    <div id="exerciseList"></div>
+    <button class="ghost-btn" id="addExercise">+ ADD EXERCISE</button>
+  </div>
+
+  <!-- ============ VIRTUES: READING ============ -->
+  <div class="section" id="sectionReading">
+    <p class="section-title">Currently Reading</p>
+    <div id="readingList"></div>
+    <div class="card-wrap" style="padding:14px 18px;">
+      <button class="add-toggle" id="addBookToggle" style="margin-top:0;">+ ADD BOOK</button>
+      <div class="inline-form" id="addBookForm">
+        <div class="form-row"><label>Title</label><input type="text" id="bookTitle" placeholder="Book title"></div>
+        <div class="form-row"><label>Total Pages</label><input type="number" id="bookPages" min="1" step="1"></div>
+        <div class="form-btns">
+          <button class="cancel" id="bookCancel">Cancel</button>
+          <button class="confirm" id="bookConfirm">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VIRTUES: ARCHIVE ============ -->
+  <div class="section" id="sectionArchive">
+    <p class="section-title">Archival Progress</p>
+    <div id="archiveList"></div>
+    <div class="card-wrap" style="padding:14px 18px;">
+      <button class="add-toggle" id="addCategoryToggle" style="margin-top:0;">+ ADD CATEGORY</button>
+      <div class="inline-form" id="addCategoryForm">
+        <div class="form-row"><label>Category</label><input type="text" id="categoryName" placeholder="e.g. Photos, Cassettes"></div>
+        <div class="form-btns">
+          <button class="cancel" id="categoryCancel">Cancel</button>
+          <button class="confirm olive" id="categoryConfirm">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VIRTUES: NOTES ============ -->
+  <div class="section" id="sectionNotes">
+    <div class="card-wrap">
+      <div class="label-row"><span class="label">Log an entry</span></div>
+      <div class="form-row" style="margin-bottom:8px;">
+        <input type="text" id="noteInput" placeholder="e.g. began fixing 3d printer">
+      </div>
+      <div class="form-btns">
+        <button class="confirm olive" id="noteAdd" style="flex:1;">Log Entry</button>
+      </div>
+    </div>
+    <p class="section-title">Today</p>
+    <div id="notesToday" class="card-wrap"></div>
+    <p class="section-title">Earlier</p>
+    <div id="notesEarlier" class="card-wrap"></div>
+  </div>
+
+  <!-- ============ VICES: DRINKS ============ -->
+  <div class="section" id="sectionDrinks">
+    <div class="card-wrap">
+      <div class="label-row">
+        <span class="label">Drinks</span>
+        <span class="streak" id="drinksStreak">&mdash;</span>
+      </div>
+      <div id="drinkEntries"></div>
+      <div class="totals-row">
+        <div><span class="big" id="drinksTotalQty">0</span><span class="big-unit">drinks today</span></div>
+        <div class="sidenote" id="drinksTotalGrams">0g pure alcohol</div>
+      </div>
+      <button class="add-toggle" id="addDrinkToggle">+ ADD DRINK</button>
+      <div class="inline-form" id="addDrinkForm">
+        <div class="form-row"><label>Preset</label><select id="drinkPreset"></select></div>
+        <div class="form-row"><label>Name</label><input type="text" id="drinkName" placeholder="e.g. 참이슬, vodka martini dirty"></div>
+        <div class="form-grid">
+          <div class="form-row"><label>Volume (mL, per unit)</label><input type="number" id="drinkVolume" min="1" step="1"></div>
+          <div class="form-row"><label>Qty</label><input type="number" id="drinkQty" min="1" step="1" value="1"></div>
+        </div>
+        <div class="form-row"><label>ABV %</label><input type="number" id="drinkAbv" min="0" step="0.1"></div>
+        <div class="form-preview" id="drinkPreview">&mdash;</div>
+        <div class="form-btns">
+          <button class="cancel" id="drinkCancel">Cancel</button>
+          <button class="confirm" id="drinkConfirm">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VICES: SPENDING ============ -->
+  <div class="section" id="sectionSpending">
+    <div class="card-wrap">
+      <div class="label-row"><span class="label">Spending</span></div>
+      <div id="spendEntries"></div>
+      <div class="totals-row">
+        <div><span class="big" id="spendTotal">₩0</span><span class="big-unit">today</span></div>
+      </div>
+      <button class="add-toggle" id="addSpendToggle">+ ADD EXPENSE</button>
+      <div class="inline-form" id="addSpendForm">
+        <div class="form-row"><label>Amount (₩)</label><input type="number" id="spendAmount" min="0" step="100"></div>
+        <div class="form-row"><label>Note</label><input type="text" id="spendNote" placeholder="optional"></div>
+        <div class="form-btns">
+          <button class="cancel" id="spendCancel">Cancel</button>
+          <button class="confirm" id="spendConfirm">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VICES: DELAY ============ -->
+  <div class="section" id="sectionDelay">
+    <div class="tally-card rust">
+      <div class="label-row">
+        <span class="label" style="flex:none;">Delay</span>
+        <span class="sub" id="delaySub">&mdash;</span>
+      </div>
+      <div class="tally-count">
+        <span class="num" id="delayNum">0</span>
+        <span class="unit">lifetime defaults</span>
+      </div>
+      <div class="tally-btns">
+        <button class="minus" id="delayMinus">&minus;1</button>
+        <button class="plus" id="delayPlus">+1</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="export-btn" id="exportBtn">Export CSV</button>
+  <footer>LOGGED LOCALLY &middot; TAP TO TALLY</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const EXERCISE_DEFAULTS = {
+    A: [
+      { name: 'Bulgarian Split Squat', target: 3, weight: 0 },
+      { name: 'Dips', target: 3, weight: 0 },
+      { name: 'Pull-ups', target: 3, weight: 0 },
+      { name: 'Single-Arm Row', target: 3, weight: 0 },
+      { name: 'Bicep Curls', target: 2, weight: 0 },
+      { name: 'Lateral Raises', target: 2, weight: 0 },
+    ],
+    B: [
+      { name: 'Single-Leg RDL', target: 3, weight: 0 },
+      { name: 'Overhead Press', target: 3, weight: 0 },
+      { name: 'Chin-ups', target: 3, weight: 0 },
+      { name: 'FFE Split Squat', target: 3, weight: 0 },
+      { name: 'Tricep Extensions', target: 2, weight: 0 },
+      { name: 'Lateral Raises', target: 2, weight: 0 },
+    ]
+  };
+  const ARCHIVE_DEFAULTS = [
+    { id: 'books', name: 'Books Archived', total: 0 },
+    { id: 'vinyls', name: 'Vinyls Archived', total: 0 },
+  ];
+  const DRINK_PRESETS = [
+    { key:'custom',    name:'Custom',                  abv:0,    volume:100 },
+    { key:'chamisul',  name:'참이슬 (Chamisul) Soju',    abv:16.9, volume:50  },
+    { key:'cheoum',    name:'처음처럼 Soju',              abv:16.5, volume:50  },
+    { key:'beer',      name:'Beer (lager)',             abv:4.5,  volume:355 },
+    { key:'craft',     name:'Craft Beer / IPA',         abv:6,    volume:355 },
+    { key:'wine',      name:'Wine',                     abv:13,   volume:150 },
+    { key:'makgeolli', name:'Makgeolli',                abv:6,    volume:200 },
+    { key:'vodka',     name:'Vodka (shot)',             abv:40,   volume:45  },
+    { key:'whiskey',   name:'Whiskey (shot)',           abv:40,   volume:45  },
+    { key:'cocktail',  name:'Mixed Cocktail (est.)',    abv:20,   volume:120 },
+  ];
+  const calcGrams = (volumeMl, qty, abv) => volumeMl * qty * (abv/100) * 0.789;
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const fmtWon = (n) => '₩' + Math.round(n).toLocaleString('en-US');
+
+  const todayKey = () => localDateKey(new Date());
+  const localDateKey = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return y + '-' + m + '-' + day;
+  };
+  const dayLabel = () => new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+
+  let state = null;          // today's session
+  let exerciseConfig = null; // { A:[...], B:[...] }
+  let readingConfig = null;  // [{id,title,totalPages,currentPage}]
+  let archiveConfig = null;  // [{id,name,total}]
+  let delayTotal = 0;        // lifetime count
+  let weekDots = {};
+  let navSection = 'virtues';
+  let navSub = 'exercise';
+
+  const SECTIONS = {
+    virtues: ['exercise','reading','archive','notes'],
+    vices: ['drinks','spending','delay']
+  };
+  const SECTION_LABELS = { exercise:'Exercise', reading:'Reading', archive:'Archive', notes:'Notes', drinks:'Drinks', spending:'Spending', delay:'Delay' };
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(()=> t.classList.remove('show'), 1200);
+  }
+
+  async function safeList(prefix){
+    try{ const r = await window.storage.list(prefix); return (r && r.keys) ? r.keys : []; }catch(e){ return []; }
+  }
+  async function safeGet(key, fallback){
+    try{ const r = await window.storage.get(key); return JSON.parse(r.value); }catch(e){ return fallback; }
+  }
+
+  async function loadConfigs(){
+    exerciseConfig = await safeGet('exercise-config', null);
+    if(!exerciseConfig){ exerciseConfig = JSON.parse(JSON.stringify(EXERCISE_DEFAULTS)); await window.storage.set('exercise-config', JSON.stringify(exerciseConfig)); }
+
+    readingConfig = await safeGet('reading-config', null);
+    if(!readingConfig){ readingConfig = []; await window.storage.set('reading-config', JSON.stringify(readingConfig)); }
+
+    archiveConfig = await safeGet('archive-config', null);
+    if(!archiveConfig){ archiveConfig = JSON.parse(JSON.stringify(ARCHIVE_DEFAULTS)); await window.storage.set('archive-config', JSON.stringify(archiveConfig)); }
+
+    const dt = await safeGet('delay-total', null);
+    delayTotal = (typeof dt === 'number') ? dt : 0;
+  }
+  async function saveDelayTotal(){ await window.storage.set('delay-total', JSON.stringify(delayTotal)); }
+  async function saveExerciseConfig(){ await window.storage.set('exercise-config', JSON.stringify(exerciseConfig)); }
+  async function saveReadingConfig(){ await window.storage.set('reading-config', JSON.stringify(readingConfig)); }
+  async function saveArchiveConfig(){ await window.storage.set('archive-config', JSON.stringify(archiveConfig)); }
+
+  async function loadSession(){
+    const key = 'session:' + todayKey();
+    const existing = await safeGet(key, null);
+    if(existing){
+      state = existing;
+    }else{
+      let lastType = 'B';
+      const list = await safeList('session:');
+      if(list.length){
+        const dates = list.filter(k => k !== key).sort();
+        if(dates.length){
+          const prev = await safeGet(dates[dates.length-1], null);
+          if(prev) lastType = prev.dayType;
+        }
+      }
+      state = { dayType: lastType === 'A' ? 'B' : 'A', pushups: 0, sets: {}, drinkLog: [], reading: {}, archive: {}, notes: [], spending: [] };
+      await saveSession();
+    }
+    if(state.drinkLog === undefined){
+      state.drinkLog = [];
+      if(state.drinks && state.drinks > 0) state.drinkLog.push({ name:'Drink (legacy entry)', volume:0, qty:state.drinks, abv:0, grams:0 });
+    }
+    if(state.reading === undefined) state.reading = {};
+    if(state.archive === undefined) state.archive = {};
+    if(state.notes === undefined) state.notes = [];
+    if(state.spending === undefined) state.spending = [];
+    if(state.delay === undefined) state.delay = 0;
+  }
+  async function saveSession(){ await window.storage.set('session:' + todayKey(), JSON.stringify(state)); }
+
+  function drinkTotals(s){
+    const log = s.drinkLog || [];
+    const qty = log.reduce((sum,e) => sum + (e.qty||0), 0);
+    const grams = log.reduce((sum,e) => sum + (e.grams||0), 0);
+    return { qty, grams };
+  }
+
+  async function loadWeek(){
+    const keys = await safeList('session:');
+    const now = new Date();
+    weekDots = {};
+    for(let i=6;i>=0;i--){ const d = new Date(now); d.setDate(d.getDate()-i); weekDots[localDateKey(d)] = null; }
+    for(const k of keys){
+      const dateStr = k.replace('session:','');
+      if(dateStr in weekDots){ const s = await safeGet(k, null); if(s) weekDots[dateStr] = s.dayType; }
+    }
+  }
+
+  /* ---------------- NAV ---------------- */
+  function renderNav(){
+    document.getElementById('btnVirtues').className = navSection === 'virtues' ? 'active-virtues' : '';
+    document.getElementById('btnVices').className = navSection === 'vices' ? 'active-vices' : '';
+
+    const subEl = document.getElementById('navSub');
+    subEl.innerHTML = '';
+    SECTIONS[navSection].forEach(key => {
+      const btn = document.createElement('button');
+      btn.textContent = SECTION_LABELS[key].toUpperCase();
+      if(key === navSub) btn.classList.add('active');
+      btn.addEventListener('click', () => { navSub = key; renderNav(); });
+      subEl.appendChild(btn);
+    });
+
+    const allKeys = ['exercise','reading','archive','notes','drinks','spending','delay'];
+    allKeys.forEach(key => {
+      const el = document.getElementById('section' + key.charAt(0).toUpperCase() + key.slice(1));
+      if(el) el.classList.toggle('active', key === navSub);
+    });
+  }
+
+  /* ---------------- HEADER / WEEK ---------------- */
+  function renderHeader(){ document.getElementById('dateBadge').textContent = dayLabel(); }
+  function renderWeekStrip(){
+    const el = document.getElementById('weekStrip');
+    el.innerHTML = '';
+    const tk = todayKey();
+    Object.keys(weekDots).sort().forEach(dateStr => {
+      const dot = document.createElement('div');
+      dot.className = 'day-dot';
+      const type = weekDots[dateStr];
+      if(type === 'A') dot.classList.add('done-a');
+      if(type === 'B') dot.classList.add('done-b');
+      if(dateStr === tk) dot.classList.add('today');
+      el.appendChild(dot);
+    });
+  }
+
+  /* ---------------- EXERCISE ---------------- */
+  function renderDayToggle(){
+    document.getElementById('btnDayA').className = state.dayType === 'A' ? 'active-a' : '';
+    document.getElementById('btnDayB').className = state.dayType === 'B' ? 'active-b' : '';
+  }
+  function renderPushups(){
+    document.getElementById('pushupNum').textContent = state.pushups;
+    const row = document.getElementById('plateRow');
+    row.innerHTML = '';
+    const plateCount = Math.max(6, Math.ceil(state.pushups / 10));
+    for(let i=0;i<plateCount;i++){
+      const p = document.createElement('div');
+      const repsForPlate = (i+1) * 10;
+      p.className = 'plate' + (state.pushups >= repsForPlate ? ' filled' : '');
+      p.textContent = repsForPlate;
+      row.appendChild(p);
+    }
+  }
+  async function bumpPushups(n){ state.pushups = Math.max(0, state.pushups + n); await saveSession(); renderPushups(); }
+
+  function renderExercises(){
+    const list = exerciseConfig[state.dayType];
+    const el = document.getElementById('exerciseList');
+    el.innerHTML = '';
+    list.forEach(ex => {
+      const done = (state.sets[ex.name] || 0);
+      const complete = done >= ex.target;
+      const row = document.createElement('div');
+      row.className = 'exercise' + (complete ? ' complete' : '');
+
+      const main = document.createElement('div');
+      main.className = 'ex-main';
+
+      const nameInput = document.createElement('input');
+      nameInput.className = 'ex-name';
+      nameInput.value = ex.name;
+      nameInput.addEventListener('change', async () => {
+        const oldName = ex.name, newName = nameInput.value.trim() || oldName;
+        if(newName !== oldName){
+          if(state.sets[oldName] !== undefined){ state.sets[newName] = state.sets[oldName]; delete state.sets[oldName]; }
+          ex.name = newName;
+          await saveExerciseConfig(); await saveSession(); renderExercises();
+        }
+      });
+
+      const targetRow = document.createElement('div');
+      targetRow.className = 'ex-target';
+      const targetSpan = document.createElement('span'); targetSpan.textContent = 'target';
+      const targetInput = document.createElement('input');
+      targetInput.type = 'number'; targetInput.min = '1'; targetInput.value = ex.target;
+      targetInput.addEventListener('change', async () => {
+        const v = parseInt(targetInput.value, 10);
+        ex.target = (isNaN(v) || v < 1) ? 1 : v;
+        await saveExerciseConfig(); renderExercises();
+      });
+      const setsWord = document.createElement('span'); setsWord.textContent = 'sets';
+      const divider = document.createElement('span'); divider.className = 'divider'; divider.textContent = '\u00b7';
+      const weightSpan = document.createElement('span'); weightSpan.textContent = 'wt';
+      const weightInput = document.createElement('input');
+      weightInput.className = 'weight-input'; weightInput.type = 'number'; weightInput.min = '0'; weightInput.step = '0.5';
+      weightInput.value = ex.weight || 0;
+      weightInput.addEventListener('change', async () => {
+        const v = parseFloat(weightInput.value);
+        ex.weight = (isNaN(v) || v < 0) ? 0 : v;
+        await saveExerciseConfig(); renderExercises();
+      });
+      const kgSpan = document.createElement('span'); kgSpan.textContent = 'kg';
+      targetRow.append(targetSpan, targetInput, setsWord, divider, weightSpan, weightInput, kgSpan);
+      main.append(nameInput, targetRow);
+
+      const counter = document.createElement('div');
+      counter.className = 'ex-counter';
+      const minus = document.createElement('button');
+      minus.textContent = '\u2212';
+      minus.addEventListener('click', async () => { state.sets[ex.name] = Math.max(0, (state.sets[ex.name]||0) - 1); await saveSession(); renderExercises(); });
+      const setsSpan = document.createElement('div'); setsSpan.className = 'ex-sets'; setsSpan.textContent = done + '/' + ex.target;
+      const add = document.createElement('button');
+      add.className = 'add'; add.textContent = '+';
+      add.addEventListener('click', async () => {
+        state.sets[ex.name] = (state.sets[ex.name]||0) + 1;
+        await saveSession();
+        if(state.sets[ex.name] === ex.target) toast(ex.name + ' done');
+        renderExercises();
+      });
+      counter.append(minus, setsSpan, add);
+      row.append(main, counter);
+      el.appendChild(row);
+    });
+  }
+
+  async function setDayType(type){
+    if(state.dayType === type) return;
+    state.dayType = type;
+    await saveSession();
+    renderDayToggle(); renderExercises();
+    weekDots[todayKey()] = type;
+    renderWeekStrip();
+  }
+  async function addExercise(){
+    const list = exerciseConfig[state.dayType];
+    let n = 1, name = 'New Exercise';
+    while(list.some(e => e.name === name)){ n++; name = 'New Exercise ' + n; }
+    list.push({ name, target: 3, weight: 0 });
+    await saveExerciseConfig(); renderExercises();
+  }
+
+  /* ---------------- READING ---------------- */
+  function renderReading(){
+    const el = document.getElementById('readingList');
+    el.innerHTML = '';
+    if(!readingConfig.length){
+      const empty = document.createElement('p');
+      empty.className = 'form-preview';
+      empty.style.color = 'var(--chalk-dim)';
+      empty.textContent = 'No books yet — add one below.';
+      el.appendChild(empty);
+    }
+    readingConfig.forEach(book => {
+      const pct = book.totalPages ? Math.min(100, Math.round(book.currentPage / book.totalPages * 100)) : 0;
+      const complete = book.currentPage >= book.totalPages && book.totalPages > 0;
+      const card = document.createElement('div');
+      card.className = 'book-card' + (complete ? ' complete' : '');
+
+      const head = document.createElement('div'); head.className = 'book-head';
+      const titleInput = document.createElement('input');
+      titleInput.className = 'book-title'; titleInput.value = book.title;
+      titleInput.addEventListener('change', async () => { book.title = titleInput.value.trim() || book.title; await saveReadingConfig(); });
+      const remove = document.createElement('button');
+      remove.className = 'list-entry-remove'; remove.textContent = '\u00d7';
+      remove.addEventListener('click', async () => {
+        readingConfig = readingConfig.filter(b => b.id !== book.id);
+        delete state.reading[book.id];
+        await saveReadingConfig(); await saveSession(); renderReading();
+      });
+      head.append(titleInput, remove);
+
+      const barWrap = document.createElement('div'); barWrap.className = 'book-progress-bar';
+      const bar = document.createElement('div'); bar.className = 'book-progress-fill'; bar.style.width = pct + '%';
+      barWrap.appendChild(bar);
+
+      const meta = document.createElement('div'); meta.className = 'book-meta';
+      const pagesLabel = document.createElement('span');
+      pagesLabel.textContent = book.currentPage + ' / ' + book.totalPages + ' pages (' + pct + '%)';
+      const todayLabel = document.createElement('span');
+      const todayCount = state.reading[book.id] || 0;
+      todayLabel.textContent = todayCount ? '+' + todayCount + ' today' : '';
+      meta.append(pagesLabel, todayLabel);
+
+      const actions = document.createElement('div'); actions.className = 'book-actions';
+      const mk = (label, delta) => {
+        const b = document.createElement('button'); b.textContent = label;
+        b.addEventListener('click', async () => { await logPages(book, delta); });
+        return b;
+      };
+      const customInput = document.createElement('input');
+      customInput.type = 'number'; customInput.min = '1'; customInput.placeholder = 'pp';
+      const customAdd = document.createElement('button'); customAdd.className = 'add'; customAdd.textContent = '+';
+      customAdd.addEventListener('click', async () => {
+        const v = parseInt(customInput.value, 10);
+        if(v > 0){ await logPages(book, v); customInput.value = ''; }
+      });
+      actions.append(mk('+10', 10), mk('+25', 25), customInput, customAdd);
+
+      card.append(head, barWrap, meta, actions);
+      el.appendChild(card);
+    });
+  }
+  async function logPages(book, delta){
+    book.currentPage = Math.max(0, Math.min(book.totalPages, book.currentPage + delta));
+    state.reading[book.id] = (state.reading[book.id] || 0) + delta;
+    await saveReadingConfig(); await saveSession();
+    if(book.currentPage >= book.totalPages) toast(book.title + ' finished');
+    renderReading();
+  }
+  async function addBook(){
+    const title = document.getElementById('bookTitle').value.trim();
+    const pages = parseInt(document.getElementById('bookPages').value, 10);
+    if(!title || !pages || pages < 1) { toast('Title and page count needed'); return; }
+    readingConfig.push({ id: uid(), title, totalPages: pages, currentPage: 0 });
+    await saveReadingConfig();
+    document.getElementById('bookTitle').value = ''; document.getElementById('bookPages').value = '';
+    toggleForm('addBookForm', false);
+    renderReading();
+  }
+
+  /* ---------------- ARCHIVE ---------------- */
+  function renderArchive(){
+    const el = document.getElementById('archiveList');
+    el.innerHTML = '';
+    archiveConfig.forEach(cat => {
+      const todayCount = state.archive[cat.id] || 0;
+      const card = document.createElement('div');
+      card.className = 'tally-card olive';
+      const labelRow = document.createElement('div'); labelRow.className = 'label-row';
+      const nameInput = document.createElement('input');
+      nameInput.className = 'label'; nameInput.value = cat.name;
+      nameInput.addEventListener('change', async () => { cat.name = nameInput.value.trim() || cat.name; await saveArchiveConfig(); });
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'tally-remove'; removeBtn.textContent = '\u00d7';
+      removeBtn.addEventListener('click', async () => {
+        archiveConfig = archiveConfig.filter(c => c.id !== cat.id);
+        delete state.archive[cat.id];
+        await saveArchiveConfig(); await saveSession(); renderArchive();
+      });
+      const sub = document.createElement('span'); sub.className = 'sub';
+      sub.textContent = todayCount ? '+' + todayCount + ' today' : '';
+      labelRow.append(nameInput, sub, removeBtn);
+
+      const countRow = document.createElement('div'); countRow.className = 'tally-count';
+      const num = document.createElement('span'); num.className = 'num'; num.textContent = cat.total;
+      const unit = document.createElement('span'); unit.className = 'unit'; unit.textContent = 'lifetime total';
+      countRow.append(num, unit);
+
+      const btns = document.createElement('div'); btns.className = 'tally-btns';
+      const plus1 = document.createElement('button'); plus1.className = 'plus'; plus1.textContent = '+1';
+      plus1.addEventListener('click', async () => { await bumpArchive(cat, 1); });
+      const plus5 = document.createElement('button'); plus5.className = 'plus'; plus5.textContent = '+5';
+      plus5.addEventListener('click', async () => { await bumpArchive(cat, 5); });
+      const minus1 = document.createElement('button'); minus1.className = 'minus'; minus1.textContent = '\u22121';
+      minus1.addEventListener('click', async () => { await bumpArchive(cat, -1); });
+      btns.append(minus1, plus1, plus5);
+
+      card.append(labelRow, countRow, btns);
+      el.appendChild(card);
+    });
+  }
+  async function bumpArchive(cat, n){
+    cat.total = Math.max(0, cat.total + n);
+    state.archive[cat.id] = Math.max(0, (state.archive[cat.id]||0) + n);
+    await saveArchiveConfig(); await saveSession(); renderArchive();
+  }
+  async function addCategory(){
+    const name = document.getElementById('categoryName').value.trim();
+    if(!name){ toast('Name a category'); return; }
+    archiveConfig.push({ id: uid(), name, total: 0 });
+    await saveArchiveConfig();
+    document.getElementById('categoryName').value = '';
+    toggleForm('addCategoryForm', false);
+    renderArchive();
+  }
+
+  /* ---------------- NOTES ---------------- */
+  function renderNotesToday(){
+    const el = document.getElementById('notesToday');
+    el.innerHTML = '';
+    if(!state.notes.length){
+      const empty = document.createElement('p'); empty.className = 'form-preview'; empty.style.color = 'var(--chalk-dim)';
+      empty.textContent = 'Nothing logged yet today.';
+      el.appendChild(empty);
+      return;
+    }
+    state.notes.slice().reverse().forEach((n, revIdx) => {
+      const idx = state.notes.length - 1 - revIdx;
+      const row = document.createElement('div'); row.className = 'note-entry';
+      const body = document.createElement('div'); body.className = 'note-body';
+      const time = document.createElement('div'); time.className = 'note-time'; time.textContent = n.time;
+      const text = document.createElement('div'); text.className = 'note-text'; text.textContent = n.text;
+      body.append(time, text);
+      const remove = document.createElement('button'); remove.className = 'list-entry-remove'; remove.textContent = '\u00d7';
+      remove.addEventListener('click', async () => { state.notes.splice(idx,1); await saveSession(); renderNotesToday(); });
+      row.append(body, remove);
+      el.appendChild(row);
+    });
+  }
+  async function renderNotesEarlier(){
+    const el = document.getElementById('notesEarlier');
+    el.innerHTML = '';
+    const keys = await safeList('session:');
+    const dates = keys.map(k => k.replace('session:','')).filter(d => d !== todayKey()).sort().reverse().slice(0, 13);
+    let any = false;
+    for(const d of dates){
+      const s = await safeGet('session:' + d, null);
+      if(!s || !s.notes || !s.notes.length) continue;
+      s.notes.forEach(n => {
+        any = true;
+        const row = document.createElement('div'); row.className = 'note-entry';
+        const body = document.createElement('div'); body.className = 'note-body';
+        const time = document.createElement('div'); time.className = 'note-time'; time.textContent = d + ' \u00b7 ' + n.time;
+        const text = document.createElement('div'); text.className = 'note-text'; text.textContent = n.text;
+        body.append(time, text);
+        row.appendChild(body);
+        el.appendChild(row);
+      });
+    }
+    if(!any){
+      const empty = document.createElement('p'); empty.className = 'form-preview'; empty.style.color = 'var(--chalk-dim)';
+      empty.textContent = 'Nothing further back.';
+      el.appendChild(empty);
+    }
+  }
+  async function addNote(){
+    const input = document.getElementById('noteInput');
+    const text = input.value.trim();
+    if(!text) return;
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+    state.notes.push({ time, text });
+    await saveSession();
+    input.value = '';
+    renderNotesToday();
+    toast('Logged');
+  }
+
+  /* ---------------- DRINKS ---------------- */
+  function renderDrinkEntries(){
+    const el = document.getElementById('drinkEntries');
+    el.innerHTML = '';
+    (state.drinkLog || []).forEach((entry, idx) => {
+      const row = document.createElement('div'); row.className = 'list-entry';
+      const info = document.createElement('div'); info.className = 'list-entry-info';
+      const name = document.createElement('div'); name.className = 'list-entry-name';
+      name.textContent = entry.name + (entry.qty > 1 ? ' \u00d7' + entry.qty : '');
+      const meta = document.createElement('div'); meta.className = 'list-entry-meta';
+      const grams = entry.grams || 0;
+      meta.textContent = (entry.volume ? entry.volume + 'mL' : '\u2014') + ' \u00b7 ' + (entry.abv ? entry.abv + '% ABV' : '\u2014') + ' \u00b7 ~' + grams.toFixed(0) + 'g';
+      info.append(name, meta);
+      const remove = document.createElement('button'); remove.className = 'list-entry-remove'; remove.textContent = '\u00d7';
+      remove.addEventListener('click', async () => { state.drinkLog.splice(idx,1); await saveSession(); await renderDrinksAll(); });
+      row.append(info, remove);
+      el.appendChild(row);
+    });
+    const totals = drinkTotals(state);
+    document.getElementById('drinksTotalQty').textContent = totals.qty;
+    document.getElementById('drinksTotalGrams').textContent = '\u2248' + totals.grams.toFixed(0) + 'g pure alcohol';
+  }
+  function populatePresetSelect(){
+    const sel = document.getElementById('drinkPreset');
+    sel.innerHTML = '';
+    DRINK_PRESETS.forEach(p => { const opt = document.createElement('option'); opt.value = p.key; opt.textContent = p.name; sel.appendChild(opt); });
+  }
+  function applyPreset(key){
+    const p = DRINK_PRESETS.find(x => x.key === key) || DRINK_PRESETS[0];
+    if(p.key !== 'custom') document.getElementById('drinkName').value = p.name;
+    document.getElementById('drinkVolume').value = p.volume;
+    document.getElementById('drinkAbv').value = p.abv;
+    updateDrinkPreview();
+  }
+  function updateDrinkPreview(){
+    const vol = parseFloat(document.getElementById('drinkVolume').value) || 0;
+    const qty = parseFloat(document.getElementById('drinkQty').value) || 0;
+    const abv = parseFloat(document.getElementById('drinkAbv').value) || 0;
+    document.getElementById('drinkPreview').textContent = '\u2248 ' + calcGrams(vol, qty, abv).toFixed(1) + 'g pure alcohol total';
+  }
+  function toggleForm(id, open){
+    const form = document.getElementById(id);
+    form.classList.toggle('open', open);
+  }
+  async function confirmAddDrink(){
+    const name = document.getElementById('drinkName').value.trim() || 'Drink';
+    const volume = parseFloat(document.getElementById('drinkVolume').value) || 0;
+    const qty = Math.max(1, parseInt(document.getElementById('drinkQty').value, 10) || 1);
+    const abv = parseFloat(document.getElementById('drinkAbv').value) || 0;
+    const grams = calcGrams(volume, qty, abv);
+    if(!state.drinkLog) state.drinkLog = [];
+    state.drinkLog.push({ name, volume, qty, abv, grams });
+    await saveSession();
+    toggleForm('addDrinkForm', false);
+    toast(name + ' logged');
+    await renderDrinksAll();
+  }
+  async function renderDrinksAll(){ renderDrinkEntries(); await renderStreak(); weekDots[todayKey()] = state.dayType; }
+  async function renderStreak(){
+    const keys = await safeList('session:');
+    const known = {};
+    for(const k of keys){ const s = await safeGet(k, null); if(s) known[k.replace('session:','')] = drinkTotals(s).qty; }
+    let streak = 0;
+    const d = new Date();
+    while(true){
+      const ds = localDateKey(d);
+      if(!(ds in known)) break;
+      if(known[ds] > 0) break;
+      streak++; d.setDate(d.getDate()-1);
+    }
+    document.getElementById('drinksStreak').textContent = streak === 0 ? 'streak reset' : streak + ' day' + (streak===1?'':'s') + ' alcohol-free';
+  }
+
+  /* ---------------- SPENDING ---------------- */
+  function renderSpending(){
+    const el = document.getElementById('spendEntries');
+    el.innerHTML = '';
+    (state.spending || []).forEach((entry, idx) => {
+      const row = document.createElement('div'); row.className = 'list-entry';
+      const info = document.createElement('div'); info.className = 'list-entry-info';
+      const name = document.createElement('div'); name.className = 'list-entry-name'; name.textContent = fmtWon(entry.amount);
+      const meta = document.createElement('div'); meta.className = 'list-entry-meta'; meta.textContent = entry.note || '\u2014';
+      info.append(name, meta);
+      const remove = document.createElement('button'); remove.className = 'list-entry-remove'; remove.textContent = '\u00d7';
+      remove.addEventListener('click', async () => { state.spending.splice(idx,1); await saveSession(); renderSpending(); });
+      row.append(info, remove);
+      el.appendChild(row);
+    });
+    const total = (state.spending || []).reduce((sum,e) => sum + (e.amount||0), 0);
+    document.getElementById('spendTotal').textContent = fmtWon(total);
+  }
+  async function confirmAddSpend(){
+    const amount = parseFloat(document.getElementById('spendAmount').value);
+    const note = document.getElementById('spendNote').value.trim();
+    if(!amount || amount <= 0){ toast('Enter an amount'); return; }
+    if(!state.spending) state.spending = [];
+    state.spending.push({ amount, note });
+    await saveSession();
+    document.getElementById('spendAmount').value = ''; document.getElementById('spendNote').value = '';
+    toggleForm('addSpendForm', false);
+    renderSpending();
+  }
+
+  /* ---------------- DELAY ---------------- */
+  function renderDelay(){
+    document.getElementById('delayNum').textContent = delayTotal;
+    document.getElementById('delaySub').textContent = state.delay ? '+' + state.delay + ' today' : '';
+  }
+  async function bumpDelay(n){
+    delayTotal = Math.max(0, delayTotal + n);
+    state.delay = Math.max(0, (state.delay||0) + n);
+    await saveDelayTotal(); await saveSession();
+    renderDelay();
+  }
+
+  /* ---------------- EXPORT ---------------- */
+  function csvEscape(val){ return '"' + String(val).replace(/"/g,'""') + '"'; }
+  async function exportCSV(){
+    const keys = await safeList('session:');
+    const rows = [['date','day_type','pushups','exercise_detail','drinks_qty','drinks_grams','drinks_detail','reading_detail','archive_detail','notes','spending_total','spending_detail','delay_today']];
+    const dates = keys.map(k => k.replace('session:','')).sort();
+    for(const dateStr of dates){
+      const s = await safeGet('session:' + dateStr, null);
+      if(!s) continue;
+      const exList = exerciseConfig[s.dayType] || [];
+      const exDetail = exList.map(ex => ex.name + '@' + (ex.weight||0) + 'kg:' + ((s.sets||{})[ex.name]||0) + '/' + ex.target).join('; ');
+      const totals = drinkTotals(s);
+      const drinkDetail = (s.drinkLog || []).map(e => e.name + ' x' + e.qty + ' (' + e.volume + 'mL, ' + e.abv + '%, ~' + (e.grams||0).toFixed(0) + 'g)').join('; ');
+      const readingDetail = Object.entries(s.reading || {}).map(([id, pages]) => {
+        const book = readingConfig.find(b => b.id === id);
+        return (book ? book.title : id) + ':+' + pages + 'pp';
+      }).join('; ');
+      const archiveDetail = Object.entries(s.archive || {}).map(([id, count]) => {
+        const cat = archiveConfig.find(c => c.id === id);
+        return (cat ? cat.name : id) + ':+' + count;
+      }).join('; ');
+      const notesDetail = (s.notes || []).map(n => n.time + ' ' + n.text).join('; ');
+      const spendTotal = (s.spending || []).reduce((sum,e) => sum + (e.amount||0), 0);
+      const spendDetail = (s.spending || []).map(e => e.amount + (e.note ? ' (' + e.note + ')' : '')).join('; ');
+      rows.push([dateStr, s.dayType, s.pushups||0, exDetail, totals.qty, totals.grams.toFixed(1), drinkDetail, readingDetail, archiveDetail, notesDetail, spendTotal, spendDetail, s.delay||0]);
+    }
+    const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'ledger-' + todayKey() + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('CSV downloaded');
+  }
+
+  /* ---------------- INIT ---------------- */
+  async function init(){
+    renderHeader();
+    await loadConfigs();
+    await loadSession();
+    await loadWeek();
+    weekDots[todayKey()] = state.dayType;
+
+    renderWeekStrip();
+    renderNav();
+    renderDayToggle();
+    renderPushups();
+    renderExercises();
+    renderReading();
+    renderArchive();
+    renderNotesToday();
+    await renderNotesEarlier();
+    renderDrinkEntries();
+    await renderStreak();
+    renderSpending();
+    renderDelay();
+
+    document.getElementById('btnVirtues').addEventListener('click', () => { navSection='virtues'; navSub=SECTIONS.virtues[0]; renderNav(); });
+    document.getElementById('btnVices').addEventListener('click', () => { navSection='vices'; navSub=SECTIONS.vices[0]; renderNav(); });
+
+    document.getElementById('btnDayA').addEventListener('click', () => setDayType('A'));
+    document.getElementById('btnDayB').addEventListener('click', () => setDayType('B'));
+    document.getElementById('pushupPlus5').addEventListener('click', () => bumpPushups(5));
+    document.getElementById('pushupPlus10').addEventListener('click', () => bumpPushups(10));
+    document.getElementById('pushupMinus').addEventListener('click', () => bumpPushups(-5));
+    document.getElementById('addExercise').addEventListener('click', addExercise);
+
+    document.getElementById('addBookToggle').addEventListener('click', () => toggleForm('addBookForm', true));
+    document.getElementById('bookCancel').addEventListener('click', () => toggleForm('addBookForm', false));
+    document.getElementById('bookConfirm').addEventListener('click', addBook);
+
+    document.getElementById('addCategoryToggle').addEventListener('click', () => toggleForm('addCategoryForm', true));
+    document.getElementById('categoryCancel').addEventListener('click', () => toggleForm('addCategoryForm', false));
+    document.getElementById('categoryConfirm').addEventListener('click', addCategory);
+
+    document.getElementById('noteAdd').addEventListener('click', addNote);
+    document.getElementById('noteInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') addNote(); });
+
+    document.getElementById('addDrinkToggle').addEventListener('click', () => { toggleForm('addDrinkForm', true); populatePresetSelect(); applyPreset('chamisul'); document.getElementById('drinkQty').value = 1; });
+    document.getElementById('drinkCancel').addEventListener('click', () => toggleForm('addDrinkForm', false));
+    document.getElementById('drinkConfirm').addEventListener('click', confirmAddDrink);
+    document.getElementById('drinkPreset').addEventListener('change', (e) => applyPreset(e.target.value));
+    ['drinkVolume','drinkQty','drinkAbv'].forEach(id => document.getElementById(id).addEventListener('input', updateDrinkPreview));
+
+    document.getElementById('addSpendToggle').addEventListener('click', () => toggleForm('addSpendForm', true));
+    document.getElementById('spendCancel').addEventListener('click', () => toggleForm('addSpendForm', false));
+    document.getElementById('spendConfirm').addEventListener('click', confirmAddSpend);
+
+    document.getElementById('exportBtn').addEventListener('click', exportCSV);
+
+    document.getElementById('delayPlus').addEventListener('click', () => bumpDelay(1));
+    document.getElementById('delayMinus').addEventListener('click', () => bumpDelay(-1));
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
