@@ -44,11 +44,38 @@
   h1{ font-family:'Oswald',sans-serif; font-weight:600; font-size:28px; margin:0; color:var(--chalk); }
   .date-badge{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--chalk-dim); text-align:right; line-height:1.5; }
 
-  .week-strip{ display:flex; gap:6px; margin-bottom:18px; }
-  .week-strip .day-dot{ flex:1; height:5px; border-radius:3px; background:var(--hairline); }
-  .week-strip .day-dot.done-a{ background:var(--rust); }
-  .week-strip .day-dot.done-b{ background:var(--steel); }
-  .week-strip .day-dot.today{ outline:1px solid var(--chalk-dim); outline-offset:2px; }
+  /* ---- day strip: pick which day everything below is showing/editing ---- */
+  .day-strip-wrap{ display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+  .strip-nav{
+    width:28px; height:28px; border-radius:8px; border:1px solid var(--hairline);
+    background:var(--surface-raised); color:var(--chalk); font-size:14px; cursor:pointer; flex-shrink:0;
+  }
+  .strip-nav:disabled{ opacity:0.25; cursor:default; }
+  .day-strip{ flex:1; display:flex; gap:5px; }
+  .strip-cell{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:6px 2px 7px; border-radius:8px; cursor:pointer; border:1px solid transparent;
+  }
+  .strip-cell.today{ border-color:var(--hairline); }
+  .strip-cell.selected{ background:var(--surface-raised); border-color:var(--chalk); }
+  .strip-cell.future{ opacity:0.25; cursor:default; }
+  .strip-daynum{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); }
+  .strip-cell.selected .strip-daynum{ color:var(--chalk); }
+  .strip-bar{ width:100%; height:4px; border-radius:2px; background:var(--hairline); }
+  .strip-bar.a{ background:var(--rust); }
+  .strip-bar.b{ background:var(--steel); }
+  .strip-vice-dot{ width:4px; height:4px; border-radius:50%; background:var(--rust); }
+
+  .viewing-banner{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--surface-raised); border:1px solid var(--steel); border-radius:10px;
+    padding:9px 12px; margin-bottom:16px;
+  }
+  .viewing-banner span{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk); }
+  .viewing-banner button{
+    background:var(--steel); border:none; color:#1c1b19; font-family:'Oswald',sans-serif;
+    font-size:11px; font-weight:600; padding:7px 11px; border-radius:6px; cursor:pointer; flex-shrink:0;
+  }
 
   /* ---- top-level nav ---- */
   .nav-main{ display:flex; gap:8px; margin-bottom:10px; }
@@ -59,48 +86,6 @@
   }
   .nav-main button.active-virtues{ background:var(--olive); border-color:var(--olive); color:#1c1b19; font-weight:600; }
   .nav-main button.active-vices{ background:var(--rust); border-color:var(--rust); color:#1c1b19; font-weight:600; }
-  .nav-main button.active-history{ background:var(--steel); border-color:var(--steel); color:#1c1b19; font-weight:600; }
-
-  /* ---- history / calendar ---- */
-  .cal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-  .cal-header button{
-    width:36px; height:36px; border-radius:8px; border:1px solid var(--hairline);
-    background:var(--surface-raised); color:var(--chalk); font-size:16px; cursor:pointer;
-  }
-  .cal-header .cal-title{ font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:0.03em; color:var(--chalk); }
-  .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px; }
-  .cal-weekdays span{
-    text-align:center; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--chalk-dim);
-    letter-spacing:0.05em;
-  }
-  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:18px; }
-  .cal-cell{
-    aspect-ratio:1; border-radius:8px; border:1px solid var(--hairline); background:var(--surface);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-    cursor:pointer; position:relative;
-  }
-  .cal-cell.empty{ visibility:hidden; cursor:default; }
-  .cal-cell.future{ opacity:0.3; cursor:default; }
-  .cal-cell.today{ border-color:var(--chalk-dim); border-width:2px; }
-  .cal-cell.selected{ border-color:var(--chalk); background:var(--surface-raised); }
-  .cal-daynum{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--chalk); }
-  .cal-dots{ display:flex; gap:3px; }
-  .cal-dot{ width:5px; height:5px; border-radius:50%; }
-  .cal-dot.virtue{ background:var(--olive); }
-  .cal-dot.vice{ background:var(--rust); }
-
-  .cal-detail{ background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); padding:16px 18px; margin-bottom:20px; }
-  .cal-detail-title{ font-family:'Oswald',sans-serif; font-size:16px; color:var(--chalk); margin-bottom:10px; }
-  .cal-detail-row{ display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--hairline); font-size:13px; }
-  .cal-detail-row:last-child{ border-bottom:none; }
-  .cal-detail-row .k{ color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; }
-  .cal-detail-row .v{ color:var(--chalk); text-align:right; }
-  .cal-detail-empty{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--chalk-dim); padding:6px 0 4px; }
-  .cal-backfill{ display:flex; gap:8px; margin-top:12px; }
-  .cal-backfill button{
-    flex:1; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.05em; text-transform:uppercase;
-    border:1px solid var(--hairline); background:var(--surface-raised); color:var(--chalk); border-radius:8px; padding:10px 0; cursor:pointer;
-  }
 
   .nav-sub{ display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
   .nav-sub button{
@@ -271,28 +256,21 @@
     <div class="date-badge" id="dateBadge">&mdash;</div>
   </header>
 
-  <div class="week-strip" id="weekStrip"></div>
+  <div class="day-strip-wrap">
+    <button class="strip-nav" id="stripPrev">&larr;</button>
+    <div class="day-strip" id="dayStrip"></div>
+    <button class="strip-nav" id="stripNext">&rarr;</button>
+  </div>
+  <div class="viewing-banner" id="viewingBanner" style="display:none;">
+    <span id="viewingBannerText"></span>
+    <button id="backToToday">Back to Today</button>
+  </div>
 
   <div class="nav-main" id="navMain">
     <button id="btnVirtues">VIRTUES</button>
     <button id="btnVices">VICES</button>
-    <button id="btnHistory">HISTORY</button>
   </div>
   <div class="nav-sub" id="navSub"></div>
-
-  <!-- ============ HISTORY ============ -->
-  <div class="section" id="sectionHistory">
-    <div class="cal-header">
-      <button id="calPrev">&larr;</button>
-      <span class="cal-title" id="calTitle">&mdash;</span>
-      <button id="calNext">&rarr;</button>
-    </div>
-    <div class="cal-weekdays">
-      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-detail" id="calDetail" style="display:none;"></div>
-  </div>
 
   <!-- ============ VIRTUES: EXERCISE ============ -->
   <div class="section" id="sectionExercise">
@@ -367,7 +345,7 @@
         <button class="confirm olive" id="noteAdd" style="flex:1;">Log Entry</button>
       </div>
     </div>
-    <p class="section-title">Today</p>
+    <p class="section-title" id="notesTodayLabel">Today</p>
     <div id="notesToday" class="card-wrap"></div>
     <p class="section-title">Earlier</p>
     <div id="notesEarlier" class="card-wrap"></div>
@@ -382,7 +360,7 @@
       </div>
       <div id="drinkEntries"></div>
       <div class="totals-row">
-        <div><span class="big" id="drinksTotalQty">0</span><span class="big-unit">drinks today</span></div>
+        <div><span class="big" id="drinksTotalQty">0</span><span class="big-unit" id="drinksTotalLabel">drinks today</span></div>
         <div class="sidenote" id="drinksTotalGrams">0g pure alcohol</div>
       </div>
       <button class="add-toggle" id="addDrinkToggle">+ ADD DRINK</button>
@@ -394,7 +372,6 @@
           <div class="form-row"><label>Qty</label><input type="number" id="drinkQty" min="1" step="1" value="1"></div>
         </div>
         <div class="form-row"><label>ABV %</label><input type="number" id="drinkAbv" min="0" step="0.1"></div>
-        <div class="form-row"><label>Date (leave as today unless backfilling)</label><input type="date" id="drinkDate"></div>
         <div class="form-preview" id="drinkPreview">&mdash;</div>
         <div class="form-btns">
           <button class="cancel" id="drinkCancel">Cancel</button>
@@ -402,8 +379,6 @@
         </div>
       </div>
     </div>
-    <p class="section-title">Retroactive Log</p>
-    <div id="drinkRetroLog" class="card-wrap"></div>
   </div>
 
   <!-- ============ VICES: SPENDING ============ -->
@@ -412,21 +387,18 @@
       <div class="label-row"><span class="label">Spending</span></div>
       <div id="spendEntries"></div>
       <div class="totals-row">
-        <div><span class="big" id="spendTotal">₩0</span><span class="big-unit">today</span></div>
+        <div><span class="big" id="spendTotal">₩0</span><span class="big-unit" id="spendTotalLabel">today</span></div>
       </div>
       <button class="add-toggle" id="addSpendToggle">+ ADD EXPENSE</button>
       <div class="inline-form" id="addSpendForm">
         <div class="form-row"><label>Amount (₩)</label><input type="number" id="spendAmount" min="0" step="100"></div>
         <div class="form-row"><label>Note</label><input type="text" id="spendNote" placeholder="optional"></div>
-        <div class="form-row"><label>Date (leave as today unless backfilling)</label><input type="date" id="spendDate"></div>
         <div class="form-btns">
           <button class="cancel" id="spendCancel">Cancel</button>
           <button class="confirm" id="spendConfirm">Add</button>
         </div>
       </div>
     </div>
-    <p class="section-title">Retroactive Log</p>
-    <div id="spendRetroLog" class="card-wrap"></div>
   </div>
 
   <!-- ============ VICES: DELAY ============ -->
@@ -495,20 +467,20 @@
 (function(){
   const EXERCISE_DEFAULTS = {
     A: [
-      { name: 'Bulgarian Split Squat', target: 3, weight: 0 },
-      { name: 'Dips', target: 3, weight: 0 },
-      { name: 'Pull-ups', target: 3, weight: 0 },
-      { name: 'Single-Arm Row', target: 3, weight: 0 },
-      { name: 'Bicep Curls', target: 2, weight: 0 },
-      { name: 'Lateral Raises', target: 2, weight: 0 },
+      { name: 'Bulgarian Split Squat', target: 3, reps: 10, weight: 0 },
+      { name: 'Dips', target: 3, reps: 10, weight: 0 },
+      { name: 'Pull-ups', target: 3, reps: 8, weight: 0 },
+      { name: 'Single-Arm Row', target: 3, reps: 10, weight: 0 },
+      { name: 'Bicep Curls', target: 2, reps: 12, weight: 0 },
+      { name: 'Lateral Raises', target: 2, reps: 12, weight: 0 },
     ],
     B: [
-      { name: 'Single-Leg RDL', target: 3, weight: 0 },
-      { name: 'Overhead Press', target: 3, weight: 0 },
-      { name: 'Chin-ups', target: 3, weight: 0 },
-      { name: 'FFE Split Squat', target: 3, weight: 0 },
-      { name: 'Tricep Extensions', target: 2, weight: 0 },
-      { name: 'Lateral Raises', target: 2, weight: 0 },
+      { name: 'Single-Leg RDL', target: 3, reps: 10, weight: 0 },
+      { name: 'Overhead Press', target: 3, reps: 8, weight: 0 },
+      { name: 'Chin-ups', target: 3, reps: 8, weight: 0 },
+      { name: 'FFE Split Squat', target: 3, reps: 10, weight: 0 },
+      { name: 'Tricep Extensions', target: 2, reps: 12, weight: 0 },
+      { name: 'Lateral Raises', target: 2, reps: 12, weight: 0 },
     ]
   };
   const ARCHIVE_DEFAULTS = [
@@ -540,16 +512,16 @@
   };
   const dayLabel = () => new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
 
-  let state = null;          // today's session
+  let state = null;          // the CURRENTLY SELECTED day's session — not necessarily today
   let exerciseConfig = null; // { A:[...], B:[...] }
   let readingConfig = null;  // [{id,title,totalPages,currentPage}]
   let archiveConfig = null;  // [{id,name,total}]
   let delayTotal = 0;        // lifetime count
-  let weekDots = {};
+  let todayDelayCount = 0;   // today's delay count — deliberately independent of viewDate, see bumpDelay()
   let navSection = 'virtues';
   let navSub = 'exercise';
-  let calendarMonth = new Date(); // day-of-month ignored, only y/m used
-  let selectedHistoryDate = null;
+  let viewDate = new Date();   // which day everything below is currently showing/editing
+  let stripAnchor = new Date(); // which week the day-strip is currently displaying
 
   const SECTIONS = {
     virtues: ['exercise','reading','archive','notes'],
@@ -590,42 +562,61 @@
   async function saveReadingConfig(){ await window.storage.set('reading-config', JSON.stringify(readingConfig)); }
   async function saveArchiveConfig(){ await window.storage.set('archive-config', JSON.stringify(archiveConfig)); }
 
-  async function loadSession(){
-    const key = 'session:' + todayKey();
-    const existing = await safeGet(key, null);
-    if(existing){
-      state = existing;
-    }else{
-      let lastType = 'B';
-      const list = await safeList('session:');
-      if(list.length){
-        const dates = list.filter(k => k !== key).sort();
-        if(dates.length){
-          const prev = await safeGet(dates[dates.length-1], null);
-          if(prev) lastType = prev.dayType;
-        }
-      }
-      state = { dayType: lastType === 'A' ? 'B' : 'A', pushups: 0, sets: {}, drinkLog: [], reading: {}, archive: {}, notes: [], spending: [] };
-      await saveSession();
-    }
-    if(state.drinkLog === undefined){
-      state.drinkLog = [];
-      if(state.drinks && state.drinks > 0) state.drinkLog.push({ name:'Drink (legacy entry)', volume:0, qty:state.drinks, abv:0, grams:0 });
-    }
-    if(state.reading === undefined) state.reading = {};
-    if(state.archive === undefined) state.archive = {};
-    if(state.notes === undefined) state.notes = [];
-    if(state.spending === undefined) state.spending = [];
-    if(state.delay === undefined) state.delay = 0;
-  }
-  async function saveSession(){ await window.storage.set('session:' + todayKey(), JSON.stringify(state)); }
+  function viewKey(){ return localDateKey(viewDate); }
 
   function blankSession(){
     return { dayType: 'A', pushups: 0, sets: {}, drinkLog: [], reading: {}, archive: {}, notes: [], spending: [], delay: 0 };
   }
+  function fillGaps(s){
+    if(s.drinkLog === undefined){
+      s.drinkLog = [];
+      if(s.drinks && s.drinks > 0) s.drinkLog.push({ name:'Drink (legacy entry)', volume:0, qty:s.drinks, abv:0, grams:0 });
+    }
+    if(s.reading === undefined) s.reading = {};
+    if(s.archive === undefined) s.archive = {};
+    if(s.notes === undefined) s.notes = [];
+    if(s.spending === undefined) s.spending = [];
+    if(s.delay === undefined) s.delay = 0;
+    return s;
+  }
+
+  // Loads whichever day viewDate currently points at into `state`. Only today gets an
+  // immediate persisted stub (so day-type alternation locks in on first open, as before) —
+  // browsing back to an empty past day holds it in memory only, and it's not written to
+  // storage unless something is actually added there.
+  async function loadSessionForView(){
+    const key = 'session:' + viewKey();
+    const existing = await safeGet(key, null);
+    if(existing){
+      state = existing;
+    }else if(viewKey() === todayKey()){
+      let lastType = 'B';
+      const list = await safeList('session:');
+      const dates = list.filter(k => k !== key).sort();
+      if(dates.length){
+        const prev = await safeGet(dates[dates.length-1], null);
+        if(prev) lastType = prev.dayType;
+      }
+      state = blankSession();
+      state.dayType = lastType === 'A' ? 'B' : 'A';
+      await saveSession();
+    }else{
+      state = blankSession();
+    }
+    fillGaps(state);
+  }
+
+  // Saving always targets whichever day is currently selected — not hardcoded to today.
+  // Any save made while viewing a day other than today marks that whole day's record as
+  // having been touched after the fact.
+  async function saveSession(){
+    if(viewKey() !== todayKey()) state.retroTouched = true;
+    await window.storage.set('session:' + viewKey(), JSON.stringify(state));
+  }
+
   async function loadOrCreateSession(dateKey){
     const s = await safeGet('session:' + dateKey, null);
-    return s || blankSession();
+    return s ? fillGaps(s) : blankSession();
   }
   async function saveSessionFor(dateKey, obj){
     await window.storage.set('session:' + dateKey, JSON.stringify(obj));
@@ -638,58 +629,110 @@
     return { qty, grams };
   }
 
-  async function loadWeek(){
-    const keys = await safeList('session:');
-    const now = new Date();
-    weekDots = {};
-    for(let i=6;i>=0;i--){ const d = new Date(now); d.setDate(d.getDate()-i); weekDots[localDateKey(d)] = null; }
-    for(const k of keys){
-      const dateStr = k.replace('session:','');
-      if(dateStr in weekDots){ const s = await safeGet(k, null); if(s) weekDots[dateStr] = s.dayType; }
-    }
-  }
-
   /* ---------------- NAV ---------------- */
   function renderNav(){
     document.getElementById('btnVirtues').className = navSection === 'virtues' ? 'active-virtues' : '';
     document.getElementById('btnVices').className = navSection === 'vices' ? 'active-vices' : '';
-    document.getElementById('btnHistory').className = navSection === 'history' ? 'active-history' : '';
 
     const subEl = document.getElementById('navSub');
     subEl.innerHTML = '';
-    if(navSection !== 'history'){
-      SECTIONS[navSection].forEach(key => {
-        const btn = document.createElement('button');
-        btn.textContent = SECTION_LABELS[key].toUpperCase();
-        if(key === navSub) btn.classList.add('active');
-        btn.addEventListener('click', () => { navSub = key; renderNav(); });
-        subEl.appendChild(btn);
-      });
-    }
+    SECTIONS[navSection].forEach(key => {
+      const btn = document.createElement('button');
+      btn.textContent = SECTION_LABELS[key].toUpperCase();
+      if(key === navSub) btn.classList.add('active');
+      btn.addEventListener('click', () => { navSub = key; renderNav(); });
+      subEl.appendChild(btn);
+    });
 
     const allKeys = ['exercise','reading','archive','notes','drinks','spending','delay'];
     allKeys.forEach(key => {
       const el = document.getElementById('section' + key.charAt(0).toUpperCase() + key.slice(1));
-      if(el) el.classList.toggle('active', navSection !== 'history' && key === navSub);
+      if(el) el.classList.toggle('active', key === navSub);
     });
-    document.getElementById('sectionHistory').classList.toggle('active', navSection === 'history');
   }
 
-  /* ---------------- HEADER / WEEK ---------------- */
+  /* ---------------- HEADER / DAY STRIP ---------------- */
   function renderHeader(){ document.getElementById('dateBadge').textContent = dayLabel(); }
-  function renderWeekStrip(){
-    const el = document.getElementById('weekStrip');
+
+  function startOfWeek(d){
+    const copy = new Date(d);
+    copy.setDate(copy.getDate() - copy.getDay());
+    return copy;
+  }
+
+  async function renderDayStrip(){
+    const start = startOfWeek(stripAnchor);
+    const todayStr = todayKey();
+    const el = document.getElementById('dayStrip');
     el.innerHTML = '';
-    const tk = todayKey();
-    Object.keys(weekDots).sort().forEach(dateStr => {
-      const dot = document.createElement('div');
-      dot.className = 'day-dot';
-      const type = weekDots[dateStr];
-      if(type === 'A') dot.classList.add('done-a');
-      if(type === 'B') dot.classList.add('done-b');
-      if(dateStr === tk) dot.classList.add('today');
-      el.appendChild(dot);
-    });
+
+    for(let i=0;i<7;i++){
+      const d = new Date(start); d.setDate(d.getDate()+i);
+      const dateStr = localDateKey(d);
+      const cell = document.createElement('div');
+      cell.className = 'strip-cell';
+      if(dateStr === todayStr) cell.classList.add('today');
+      if(dateStr === viewKey()) cell.classList.add('selected');
+      if(dateStr > todayStr) cell.classList.add('future');
+
+      const num = document.createElement('span'); num.className = 'strip-daynum'; num.textContent = d.getDate();
+      cell.appendChild(num);
+
+      const bar = document.createElement('span'); bar.className = 'strip-bar';
+      let hasVice = false;
+      if(dateStr <= todayStr){
+        const s = await safeGet('session:' + dateStr, null);
+        if(s){
+          if(s.dayType === 'A') bar.classList.add('a');
+          if(s.dayType === 'B') bar.classList.add('b');
+          hasVice = (s.drinkLog||[]).length > 0 || (s.spending||[]).length > 0 || (s.delay||0) > 0;
+        }
+      }
+      cell.appendChild(bar);
+      if(hasVice){ const dot = document.createElement('span'); dot.className = 'strip-vice-dot'; cell.appendChild(dot); }
+
+      if(dateStr <= todayStr) cell.addEventListener('click', () => selectViewDate(dateStr));
+      el.appendChild(cell);
+    }
+
+    const weekEnd = new Date(start); weekEnd.setDate(weekEnd.getDate()+6);
+    document.getElementById('stripNext').disabled = localDateKey(weekEnd) >= todayStr;
+  }
+
+  function renderViewingBanner(){
+    const banner = document.getElementById('viewingBanner');
+    if(viewKey() === todayKey()){
+      banner.style.display = 'none';
+      return;
+    }
+    banner.style.display = 'flex';
+    const label = viewDate.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    document.getElementById('viewingBannerText').textContent =
+      'Viewing ' + label + (state.retroTouched ? ' \u2014 edited retroactively' : '');
+  }
+
+  async function refreshAllForView(){
+    await loadSessionForView();
+    renderViewingBanner();
+    await renderDayStrip();
+    renderDayToggle();
+    renderPushups();
+    renderExercises();
+    renderReading();
+    renderArchive();
+    document.getElementById('notesTodayLabel').textContent = (viewKey() === todayKey()) ? 'Today' : 'This Day';
+    renderNotesToday();
+    await renderNotesEarlier();
+    renderDrinkEntries();
+    document.getElementById('drinksTotalLabel').textContent = (viewKey() === todayKey()) ? 'drinks today' : 'drinks this day';
+    await renderStreak();
+    renderSpending();
+    document.getElementById('spendTotalLabel').textContent = (viewKey() === todayKey()) ? 'today' : 'this day';
+  }
+
+  async function selectViewDate(dateStr){
+    viewDate = new Date(dateStr + 'T00:00:00');
+    await refreshAllForView();
   }
 
   /* ---------------- EXERCISE ---------------- */
@@ -748,7 +791,16 @@
         await saveExerciseConfig(); renderExercises();
       });
       const setsWord = document.createElement('span'); setsWord.textContent = 'sets';
-      const divider = document.createElement('span'); divider.className = 'divider'; divider.textContent = '\u00b7';
+      const divider1 = document.createElement('span'); divider1.className = 'divider'; divider1.textContent = '\u00b7';
+      const repsInput = document.createElement('input');
+      repsInput.className = 'weight-input'; repsInput.type = 'number'; repsInput.min = '1'; repsInput.value = ex.reps || 10;
+      repsInput.addEventListener('change', async () => {
+        const v = parseInt(repsInput.value, 10);
+        ex.reps = (isNaN(v) || v < 1) ? 1 : v;
+        await saveExerciseConfig(); renderExercises();
+      });
+      const repsWord = document.createElement('span'); repsWord.textContent = 'reps';
+      const divider2 = document.createElement('span'); divider2.className = 'divider'; divider2.textContent = '\u00b7';
       const weightSpan = document.createElement('span'); weightSpan.textContent = 'wt';
       const weightInput = document.createElement('input');
       weightInput.className = 'weight-input'; weightInput.type = 'number'; weightInput.min = '0'; weightInput.step = '0.5';
@@ -759,7 +811,7 @@
         await saveExerciseConfig(); renderExercises();
       });
       const kgSpan = document.createElement('span'); kgSpan.textContent = 'kg';
-      targetRow.append(targetSpan, targetInput, setsWord, divider, weightSpan, weightInput, kgSpan);
+      targetRow.append(targetSpan, targetInput, setsWord, divider1, repsInput, repsWord, divider2, weightSpan, weightInput, kgSpan);
       main.append(nameInput, targetRow);
 
       const counter = document.createElement('div');
@@ -787,14 +839,13 @@
     state.dayType = type;
     await saveSession();
     renderDayToggle(); renderExercises();
-    weekDots[todayKey()] = type;
-    renderWeekStrip();
+    await renderDayStrip();
   }
   async function addExercise(){
     const list = exerciseConfig[state.dayType];
     let n = 1, name = 'New Exercise';
     while(list.some(e => e.name === name)){ n++; name = 'New Exercise ' + n; }
-    list.push({ name, target: 3, weight: 0 });
+    list.push({ name, target: 3, reps: 10, weight: 0 });
     await saveExerciseConfig(); renderExercises();
   }
 
@@ -841,29 +892,38 @@
       meta.append(pagesLabel, todayLabel);
 
       const actions = document.createElement('div'); actions.className = 'book-actions';
-      const mk = (label, delta) => {
-        const b = document.createElement('button'); b.textContent = label;
-        b.addEventListener('click', async () => { await logPages(book, delta); });
-        return b;
-      };
-      const customInput = document.createElement('input');
-      customInput.type = 'number'; customInput.min = '1'; customInput.placeholder = 'pp';
-      const customAdd = document.createElement('button'); customAdd.className = 'add'; customAdd.textContent = '+';
-      customAdd.addEventListener('click', async () => {
-        const v = parseInt(customInput.value, 10);
-        if(v > 0){ await logPages(book, v); customInput.value = ''; }
+      const fromInput = document.createElement('input');
+      fromInput.type = 'number'; fromInput.min = '0'; fromInput.value = book.currentPage;
+      fromInput.title = 'Page you started from';
+      const arrow = document.createElement('span');
+      arrow.textContent = '\u2192';
+      arrow.style.color = 'var(--chalk-dim)';
+      arrow.style.fontFamily = "'JetBrains Mono',monospace";
+      arrow.style.fontSize = '12px';
+      const toInput = document.createElement('input');
+      toInput.type = 'number'; toInput.min = '1'; toInput.placeholder = 'to pg';
+      toInput.title = 'Page you stopped on';
+      const logBtn = document.createElement('button'); logBtn.className = 'add'; logBtn.textContent = 'Log';
+      logBtn.addEventListener('click', async () => {
+        const from = parseInt(fromInput.value, 10);
+        const to = parseInt(toInput.value, 10);
+        if(isNaN(to) || isNaN(from) || to <= from){ toast('Enter a valid page range'); return; }
+        await logPageRange(book, from, to);
+        toInput.value = '';
       });
-      actions.append(mk('+10', 10), mk('+25', 25), customInput, customAdd);
+      actions.append(fromInput, arrow, toInput, logBtn);
 
       card.append(head, barWrap, meta, actions);
       el.appendChild(card);
     });
   }
-  async function logPages(book, delta){
-    book.currentPage = Math.max(0, Math.min(book.totalPages, book.currentPage + delta));
-    state.reading[book.id] = (state.reading[book.id] || 0) + delta;
+  async function logPageRange(book, fromPage, toPage){
+    const pagesRead = toPage - fromPage;
+    book.currentPage = Math.max(0, Math.min(book.totalPages, toPage));
+    state.reading[book.id] = (state.reading[book.id] || 0) + pagesRead;
     await saveReadingConfig(); await saveSession();
     if(book.currentPage >= book.totalPages) toast(book.title + ' finished');
+    else toast('Logged pages ' + fromPage + '\u2192' + toPage);
     renderReading();
   }
   async function addBook(){
@@ -960,7 +1020,7 @@
     const el = document.getElementById('notesEarlier');
     el.innerHTML = '';
     const keys = await safeList('session:');
-    const dates = keys.map(k => k.replace('session:','')).filter(d => d !== todayKey()).sort().reverse().slice(0, 13);
+    const dates = keys.map(k => k.replace('session:','')).filter(d => d !== viewKey()).sort().reverse().slice(0, 13);
     let any = false;
     for(const d of dates){
       const s = await safeGet('session:' + d, null);
@@ -1045,56 +1105,22 @@
     const qty = Math.max(1, parseInt(document.getElementById('drinkQty').value, 10) || 1);
     const abv = parseFloat(document.getElementById('drinkAbv').value) || 0;
     const grams = calcGrams(volume, qty, abv);
-    const chosenDate = document.getElementById('drinkDate').value || todayKey();
     const entry = { name, volume, qty, abv, grams };
 
-    if(chosenDate === todayKey()){
-      if(!state.drinkLog) state.drinkLog = [];
-      state.drinkLog.push(entry);
-      await saveSession();
-      await renderDrinksAll();
-      toast(name + ' logged');
-    }else{
-      entry.retro = true;
-      const target = await loadOrCreateSession(chosenDate);
-      if(!target.drinkLog) target.drinkLog = [];
-      target.drinkLog.push(entry);
-      await saveSessionFor(chosenDate, target);
-      await renderDrinkRetroLog();
-      toast(name + ' logged retroactively for ' + chosenDate);
-    }
+    if(!state.drinkLog) state.drinkLog = [];
+    state.drinkLog.push(entry);
+    await saveSession();
+    await renderDrinksAll();
+    toast(name + (viewKey() === todayKey() ? ' logged' : ' logged for ' + viewKey()));
     toggleForm('addDrinkForm', false);
   }
 
-  async function renderDrinkRetroLog(){
-    const el = document.getElementById('drinkRetroLog');
-    el.innerHTML = '';
-    const keys = await safeList('session:');
-    const dates = keys.map(k => k.replace('session:','')).sort().reverse();
-    let any = false;
-    for(const d of dates){
-      const s = await safeGet('session:' + d, null);
-      if(!s || !s.drinkLog) continue;
-      s.drinkLog.filter(e => e.retro).forEach(e => {
-        any = true;
-        const row = document.createElement('div'); row.className = 'list-entry';
-        const info = document.createElement('div'); info.className = 'list-entry-info';
-        const name = document.createElement('div'); name.className = 'list-entry-name';
-        name.textContent = e.name + (e.qty > 1 ? ' \u00d7' + e.qty : '');
-        const meta = document.createElement('div'); meta.className = 'list-entry-meta';
-        meta.textContent = d + ' \u00b7 backfilled \u00b7 ~' + (e.grams||0).toFixed(0) + 'g';
-        info.append(name, meta);
-        row.appendChild(info);
-        el.appendChild(row);
-      });
-    }
-    if(!any){
-      const empty = document.createElement('p'); empty.className = 'form-preview'; empty.style.color = 'var(--chalk-dim)';
-      empty.textContent = 'No backfilled entries.';
-      el.appendChild(empty);
-    }
+  async function renderDrinksAll(){
+    renderDrinkEntries();
+    await renderStreak();
+    await renderDayStrip();
+    renderViewingBanner();
   }
-  async function renderDrinksAll(){ renderDrinkEntries(); await renderStreak(); weekDots[todayKey()] = state.dayType; }
   async function renderStreak(){
     const keys = await safeList('session:');
     const known = {};
@@ -1132,220 +1158,57 @@
     const amount = parseFloat(document.getElementById('spendAmount').value);
     const note = document.getElementById('spendNote').value.trim();
     if(!amount || amount <= 0){ toast('Enter an amount'); return; }
-    const chosenDate = document.getElementById('spendDate').value || todayKey();
     const entry = { amount, note };
 
-    if(chosenDate === todayKey()){
-      if(!state.spending) state.spending = [];
-      state.spending.push(entry);
-      await saveSession();
-      renderSpending();
-    }else{
-      entry.retro = true;
-      const target = await loadOrCreateSession(chosenDate);
-      if(!target.spending) target.spending = [];
-      target.spending.push(entry);
-      await saveSessionFor(chosenDate, target);
-      await renderSpendRetroLog();
-      toast(fmtWon(amount) + ' logged retroactively for ' + chosenDate);
-    }
+    if(!state.spending) state.spending = [];
+    state.spending.push(entry);
+    await saveSession();
+    renderSpending();
+    await renderDayStrip();
+    renderViewingBanner();
+    toast(fmtWon(amount) + (viewKey() === todayKey() ? ' logged' : ' logged for ' + viewKey()));
+
     document.getElementById('spendAmount').value = ''; document.getElementById('spendNote').value = '';
     toggleForm('addSpendForm', false);
   }
 
-  async function renderSpendRetroLog(){
-    const el = document.getElementById('spendRetroLog');
-    el.innerHTML = '';
-    const keys = await safeList('session:');
-    const dates = keys.map(k => k.replace('session:','')).sort().reverse();
-    let any = false;
-    for(const d of dates){
-      const s = await safeGet('session:' + d, null);
-      if(!s || !s.spending) continue;
-      s.spending.filter(e => e.retro).forEach(e => {
-        any = true;
-        const row = document.createElement('div'); row.className = 'list-entry';
-        const info = document.createElement('div'); info.className = 'list-entry-info';
-        const name = document.createElement('div'); name.className = 'list-entry-name'; name.textContent = fmtWon(e.amount);
-        const meta = document.createElement('div'); meta.className = 'list-entry-meta';
-        meta.textContent = d + ' \u00b7 backfilled' + (e.note ? ' \u00b7 ' + e.note : '');
-        info.append(name, meta);
-        row.appendChild(info);
-        el.appendChild(row);
-      });
-    }
-    if(!any){
-      const empty = document.createElement('p'); empty.className = 'form-preview'; empty.style.color = 'var(--chalk-dim)';
-      empty.textContent = 'No backfilled entries.';
-      el.appendChild(empty);
-    }
-  }
-
   /* ---------------- DELAY ---------------- */
+  // Delay deliberately ignores viewDate entirely, by design: it must never be backdatable,
+  // even as a side effect of the day-strip letting every other tab follow the selected day.
+  async function loadTodayDelayCount(){
+    const s = await safeGet('session:' + todayKey(), null);
+    todayDelayCount = s ? (s.delay||0) : 0;
+  }
   function renderDelay(){
     document.getElementById('delayNum').textContent = delayTotal;
-    document.getElementById('delaySub').textContent = state.delay ? '+' + state.delay + ' today' : '';
+    document.getElementById('delaySub').textContent = todayDelayCount ? '+' + todayDelayCount + ' today' : '';
   }
   async function bumpDelay(n){
     delayTotal = Math.max(0, delayTotal + n);
-    state.delay = Math.max(0, (state.delay||0) + n);
-    await saveDelayTotal(); await saveSession();
+    await saveDelayTotal();
+
+    // Always targets the real device date's own session record, regardless of which day
+    // is currently selected elsewhere in the app.
+    const todayObj = (viewKey() === todayKey()) ? state : await loadOrCreateSession(todayKey());
+    todayObj.delay = Math.max(0, (todayObj.delay||0) + n);
+    await saveSessionFor(todayKey(), todayObj);
+    todayDelayCount = todayObj.delay;
     renderDelay();
-  }
-
-  /* ---------------- HISTORY / CALENDAR ---------------- */
-  async function renderCalendarMonth(){
-    const y = calendarMonth.getFullYear();
-    const m = calendarMonth.getMonth();
-    document.getElementById('calTitle').textContent = calendarMonth.toLocaleDateString('en-US', { month:'long', year:'numeric' });
-
-    const firstOfMonth = new Date(y, m, 1);
-    const startWeekday = firstOfMonth.getDay();
-    const daysInMonth = new Date(y, m+1, 0).getDate();
-    const todayStr = todayKey();
-
-    const grid = document.getElementById('calGrid');
-    grid.innerHTML = '';
-
-    for(let i=0;i<startWeekday;i++){
-      const cell = document.createElement('div');
-      cell.className = 'cal-cell empty';
-      grid.appendChild(cell);
-    }
-
-    for(let d=1; d<=daysInMonth; d++){
-      const dateStr = localDateKey(new Date(y, m, d));
-      const cell = document.createElement('div');
-      cell.className = 'cal-cell';
-      if(dateStr === todayStr) cell.classList.add('today');
-      if(dateStr > todayStr) cell.classList.add('future');
-      if(dateStr === selectedHistoryDate) cell.classList.add('selected');
-
-      const num = document.createElement('div'); num.className = 'cal-daynum'; num.textContent = d;
-      cell.appendChild(num);
-
-      if(dateStr <= todayStr){
-        const s = await safeGet('session:' + dateStr, null);
-        if(s){
-          const hasVirtue = (s.pushups||0) > 0
-            || Object.values(s.sets||{}).some(v => v > 0)
-            || Object.keys(s.reading||{}).length > 0
-            || Object.keys(s.archive||{}).length > 0
-            || (s.notes||[]).length > 0;
-          const hasVice = (s.drinkLog||[]).length > 0 || (s.spending||[]).length > 0 || (s.delay||0) > 0;
-          if(hasVirtue || hasVice){
-            const dots = document.createElement('div'); dots.className = 'cal-dots';
-            if(hasVirtue){ const dv = document.createElement('div'); dv.className = 'cal-dot virtue'; dots.appendChild(dv); }
-            if(hasVice){ const dc = document.createElement('div'); dc.className = 'cal-dot vice'; dots.appendChild(dc); }
-            cell.appendChild(dots);
-          }
-        }
-        cell.addEventListener('click', () => selectHistoryDate(dateStr));
-      }
-      grid.appendChild(cell);
-    }
-  }
-
-  async function selectHistoryDate(dateStr){
-    selectedHistoryDate = dateStr;
-    await renderCalendarMonth();
-    await renderHistoryDetail(dateStr);
-  }
-
-  async function renderHistoryDetail(dateStr){
-    const panel = document.getElementById('calDetail');
-    panel.style.display = 'block';
-    panel.innerHTML = '';
-
-    const title = document.createElement('div'); title.className = 'cal-detail-title';
-    title.textContent = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-    panel.appendChild(title);
-
-    const s = await safeGet('session:' + dateStr, null);
-    const rows = [];
-    if(s){
-      if(s.pushups) rows.push(['Push-ups', s.pushups + ' reps']);
-      const setsTotal = Object.values(s.sets||{}).reduce((a,b)=>a+b,0);
-      if(setsTotal) rows.push(['Exercise', setsTotal + ' sets \u00b7 Day ' + (s.dayType||'?')]);
-      const readingEntries = Object.entries(s.reading||{});
-      if(readingEntries.length){
-        rows.push(['Reading', readingEntries.map(([id,pages]) => {
-          const book = readingConfig.find(b => b.id === id);
-          return (book ? book.title : id) + ' +' + pages + 'pp';
-        }).join(', ')]);
-      }
-      const archiveEntries = Object.entries(s.archive||{});
-      if(archiveEntries.length){
-        rows.push(['Archive', archiveEntries.map(([id,count]) => {
-          const cat = archiveConfig.find(c => c.id === id);
-          return (cat ? cat.name : id) + ' +' + count;
-        }).join(', ')]);
-      }
-      if((s.notes||[]).length) rows.push(['Notes', s.notes.map(n => n.text).join(' \u00b7 ')]);
-      if((s.drinkLog||[]).length){
-        const totals = drinkTotals(s);
-        rows.push(['Drinks', totals.qty + ' \u00b7 ~' + totals.grams.toFixed(0) + 'g' + (s.drinkLog.some(e=>e.retro) ? ' (some retro)' : '')]);
-      }
-      if((s.spending||[]).length){
-        const total = s.spending.reduce((sum,e) => sum + (e.amount||0), 0);
-        rows.push(['Spending', fmtWon(total) + (s.spending.some(e=>e.retro) ? ' (some retro)' : '')]);
-      }
-      if(s.delay) rows.push(['Delay', '+' + s.delay]);
-    }
-
-    if(!rows.length){
-      const empty = document.createElement('div'); empty.className = 'cal-detail-empty';
-      empty.textContent = 'Nothing logged this day.';
-      panel.appendChild(empty);
-    }else{
-      rows.forEach(([k,v]) => {
-        const row = document.createElement('div'); row.className = 'cal-detail-row';
-        const kEl = document.createElement('span'); kEl.className = 'k'; kEl.textContent = k;
-        const vEl = document.createElement('span'); vEl.className = 'v'; vEl.textContent = v;
-        row.append(kEl, vEl);
-        panel.appendChild(row);
-      });
-    }
-
-    if(dateStr !== todayKey()){
-      const bf = document.createElement('div'); bf.className = 'cal-backfill';
-      const drinkBtn = document.createElement('button'); drinkBtn.textContent = '+ Drink';
-      drinkBtn.addEventListener('click', () => jumpToBackfill('drinks', dateStr));
-      const spendBtn = document.createElement('button'); spendBtn.textContent = '+ Expense';
-      spendBtn.addEventListener('click', () => jumpToBackfill('spending', dateStr));
-      bf.append(drinkBtn, spendBtn);
-      panel.appendChild(bf);
-    }
-  }
-
-  function jumpToBackfill(subKey, dateStr){
-    navSection = 'vices'; navSub = subKey;
-    renderNav();
-    if(subKey === 'drinks'){
-      toggleForm('addDrinkForm', true);
-      populatePresetSelect(); applyPreset('chamisul');
-      document.getElementById('drinkQty').value = 1;
-      document.getElementById('drinkDate').value = dateStr;
-    }else if(subKey === 'spending'){
-      toggleForm('addSpendForm', true);
-      document.getElementById('spendDate').value = dateStr;
-    }
-    toast('Backfilling ' + dateStr);
   }
 
   /* ---------------- EXPORT ---------------- */
   function csvEscape(val){ return '"' + String(val).replace(/"/g,'""') + '"'; }
   async function exportCSV(){
     const keys = await safeList('session:');
-    const rows = [['date','day_type','pushups','exercise_detail','drinks_qty','drinks_grams','drinks_detail','reading_detail','archive_detail','notes','spending_total','spending_detail','delay_today']];
+    const rows = [['date','day_type','pushups','exercise_detail','drinks_qty','drinks_grams','drinks_detail','reading_detail','archive_detail','notes','spending_total','spending_detail','delay_today','retro_edit']];
     const dates = keys.map(k => k.replace('session:','')).sort();
     for(const dateStr of dates){
       const s = await safeGet('session:' + dateStr, null);
       if(!s) continue;
       const exList = exerciseConfig[s.dayType] || [];
-      const exDetail = exList.map(ex => ex.name + '@' + (ex.weight||0) + 'kg:' + ((s.sets||{})[ex.name]||0) + '/' + ex.target).join('; ');
+      const exDetail = exList.map(ex => ex.name + ' ' + (ex.reps||0) + 'reps@' + (ex.weight||0) + 'kg:' + ((s.sets||{})[ex.name]||0) + '/' + ex.target + 'sets').join('; ');
       const totals = drinkTotals(s);
-      const drinkDetail = (s.drinkLog || []).map(e => e.name + ' x' + e.qty + ' (' + e.volume + 'mL, ' + e.abv + '%, ~' + (e.grams||0).toFixed(0) + 'g)' + (e.retro ? ' [retro]' : '')).join('; ');
+      const drinkDetail = (s.drinkLog || []).map(e => e.name + ' x' + e.qty + ' (' + e.volume + 'mL, ' + e.abv + '%, ~' + (e.grams||0).toFixed(0) + 'g)').join('; ');
       const readingDetail = Object.entries(s.reading || {}).map(([id, pages]) => {
         const book = readingConfig.find(b => b.id === id);
         return (book ? book.title : id) + ':+' + pages + 'pp';
@@ -1356,8 +1219,8 @@
       }).join('; ');
       const notesDetail = (s.notes || []).map(n => n.time + ' ' + n.text).join('; ');
       const spendTotal = (s.spending || []).reduce((sum,e) => sum + (e.amount||0), 0);
-      const spendDetail = (s.spending || []).map(e => e.amount + (e.note ? ' (' + e.note + ')' : '') + (e.retro ? ' [retro]' : '')).join('; ');
-      rows.push([dateStr, s.dayType, s.pushups||0, exDetail, totals.qty, totals.grams.toFixed(1), drinkDetail, readingDetail, archiveDetail, notesDetail, spendTotal, spendDetail, s.delay||0]);
+      const spendDetail = (s.spending || []).map(e => e.amount + (e.note ? ' (' + e.note + ')' : '')).join('; ');
+      rows.push([dateStr, s.dayType, s.pushups||0, exDetail, totals.qty, totals.grams.toFixed(1), drinkDetail, readingDetail, archiveDetail, notesDetail, spendTotal, spendDetail, s.delay||0, s.retroTouched ? 'yes' : '']);
     }
     const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -1372,38 +1235,39 @@
   async function init(){
     renderHeader();
     await loadConfigs();
-    await loadSession();
-    await loadWeek();
-    weekDots[todayKey()] = state.dayType;
+    await loadTodayDelayCount();
+    await loadSessionForView();
 
-    renderWeekStrip();
+    renderViewingBanner();
+    await renderDayStrip();
     renderNav();
     renderDayToggle();
     renderPushups();
     renderExercises();
     renderReading();
     renderArchive();
+    document.getElementById('notesTodayLabel').textContent = 'Today';
     renderNotesToday();
     await renderNotesEarlier();
     renderDrinkEntries();
     await renderStreak();
-    await renderDrinkRetroLog();
     renderSpending();
-    await renderSpendRetroLog();
     renderDelay();
 
     document.getElementById('btnVirtues').addEventListener('click', () => { navSection='virtues'; navSub=SECTIONS.virtues[0]; renderNav(); });
     document.getElementById('btnVices').addEventListener('click', () => { navSection='vices'; navSub=SECTIONS.vices[0]; renderNav(); });
-    document.getElementById('btnHistory').addEventListener('click', () => { navSection='history'; renderNav(); renderCalendarMonth(); });
-    document.getElementById('calPrev').addEventListener('click', () => {
-      calendarMonth.setMonth(calendarMonth.getMonth()-1);
-      selectedHistoryDate = null; document.getElementById('calDetail').style.display = 'none';
-      renderCalendarMonth();
+
+    document.getElementById('stripPrev').addEventListener('click', () => {
+      stripAnchor.setDate(stripAnchor.getDate()-7);
+      renderDayStrip();
     });
-    document.getElementById('calNext').addEventListener('click', () => {
-      calendarMonth.setMonth(calendarMonth.getMonth()+1);
-      selectedHistoryDate = null; document.getElementById('calDetail').style.display = 'none';
-      renderCalendarMonth();
+    document.getElementById('stripNext').addEventListener('click', () => {
+      stripAnchor.setDate(stripAnchor.getDate()+7);
+      renderDayStrip();
+    });
+    document.getElementById('backToToday').addEventListener('click', () => {
+      stripAnchor = new Date();
+      selectViewDate(todayKey());
     });
 
     document.getElementById('btnDayA').addEventListener('click', () => setDayType('A'));
@@ -1427,19 +1291,13 @@
     document.getElementById('addDrinkToggle').addEventListener('click', () => {
       toggleForm('addDrinkForm', true); populatePresetSelect(); applyPreset('chamisul');
       document.getElementById('drinkQty').value = 1;
-      const dateEl = document.getElementById('drinkDate');
-      dateEl.max = todayKey(); dateEl.value = todayKey();
     });
     document.getElementById('drinkCancel').addEventListener('click', () => toggleForm('addDrinkForm', false));
     document.getElementById('drinkConfirm').addEventListener('click', confirmAddDrink);
     document.getElementById('drinkPreset').addEventListener('change', (e) => applyPreset(e.target.value));
     ['drinkVolume','drinkQty','drinkAbv'].forEach(id => document.getElementById(id).addEventListener('input', updateDrinkPreview));
 
-    document.getElementById('addSpendToggle').addEventListener('click', () => {
-      toggleForm('addSpendForm', true);
-      const dateEl = document.getElementById('spendDate');
-      dateEl.max = todayKey(); dateEl.value = todayKey();
-    });
+    document.getElementById('addSpendToggle').addEventListener('click', () => toggleForm('addSpendForm', true));
     document.getElementById('spendCancel').addEventListener('click', () => toggleForm('addSpendForm', false));
     document.getElementById('spendConfirm').addEventListener('click', confirmAddSpend);
 
