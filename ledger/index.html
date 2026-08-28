@@ -337,6 +337,7 @@
           <div class="form-row"><label>Qty</label><input type="number" id="drinkQty" min="1" step="1" value="1"></div>
         </div>
         <div class="form-row"><label>ABV %</label><input type="number" id="drinkAbv" min="0" step="0.1"></div>
+        <div class="form-row"><label>Date (leave as today unless backfilling)</label><input type="date" id="drinkDate"></div>
         <div class="form-preview" id="drinkPreview">&mdash;</div>
         <div class="form-btns">
           <button class="cancel" id="drinkCancel">Cancel</button>
@@ -344,6 +345,8 @@
         </div>
       </div>
     </div>
+    <p class="section-title">Retroactive Log</p>
+    <div id="drinkRetroLog" class="card-wrap"></div>
   </div>
 
   <!-- ============ VICES: SPENDING ============ -->
@@ -358,12 +361,15 @@
       <div class="inline-form" id="addSpendForm">
         <div class="form-row"><label>Amount (₩)</label><input type="number" id="spendAmount" min="0" step="100"></div>
         <div class="form-row"><label>Note</label><input type="text" id="spendNote" placeholder="optional"></div>
+        <div class="form-row"><label>Date (leave as today unless backfilling)</label><input type="date" id="spendDate"></div>
         <div class="form-btns">
           <button class="cancel" id="spendCancel">Cancel</button>
           <button class="confirm" id="spendConfirm">Add</button>
         </div>
       </div>
     </div>
+    <p class="section-title">Retroactive Log</p>
+    <div id="spendRetroLog" class="card-wrap"></div>
   </div>
 
   <!-- ============ VICES: DELAY ============ -->
@@ -424,6 +430,13 @@
     };
   }
 })();
+</script>
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 </script>
 <script>
 (function(){
@@ -551,6 +564,17 @@
     if(state.delay === undefined) state.delay = 0;
   }
   async function saveSession(){ await window.storage.set('session:' + todayKey(), JSON.stringify(state)); }
+
+  function blankSession(){
+    return { dayType: 'A', pushups: 0, sets: {}, drinkLog: [], reading: {}, archive: {}, notes: [], spending: [], delay: 0 };
+  }
+  async function loadOrCreateSession(dateKey){
+    const s = await safeGet('session:' + dateKey, null);
+    return s || blankSession();
+  }
+  async function saveSessionFor(dateKey, obj){
+    await window.storage.set('session:' + dateKey, JSON.stringify(obj));
+  }
 
   function drinkTotals(s){
     const log = s.drinkLog || [];
@@ -962,12 +986,54 @@
     const qty = Math.max(1, parseInt(document.getElementById('drinkQty').value, 10) || 1);
     const abv = parseFloat(document.getElementById('drinkAbv').value) || 0;
     const grams = calcGrams(volume, qty, abv);
-    if(!state.drinkLog) state.drinkLog = [];
-    state.drinkLog.push({ name, volume, qty, abv, grams });
-    await saveSession();
+    const chosenDate = document.getElementById('drinkDate').value || todayKey();
+    const entry = { name, volume, qty, abv, grams };
+
+    if(chosenDate === todayKey()){
+      if(!state.drinkLog) state.drinkLog = [];
+      state.drinkLog.push(entry);
+      await saveSession();
+      await renderDrinksAll();
+      toast(name + ' logged');
+    }else{
+      entry.retro = true;
+      const target = await loadOrCreateSession(chosenDate);
+      if(!target.drinkLog) target.drinkLog = [];
+      target.drinkLog.push(entry);
+      await saveSessionFor(chosenDate, target);
+      await renderDrinkRetroLog();
+      toast(name + ' logged retroactively for ' + chosenDate);
+    }
     toggleForm('addDrinkForm', false);
-    toast(name + ' logged');
-    await renderDrinksAll();
+  }
+
+  async function renderDrinkRetroLog(){
+    const el = document.getElementById('drinkRetroLog');
+    el.innerHTML = '';
+    const keys = await safeList('session:');
+    const dates = keys.map(k => k.replace('session:','')).sort().reverse();
+    let any = false;
+    for(const d of dates){
+      const s = await safeGet('session:' + d, null);
+      if(!s || !s.drinkLog) continue;
+      s.drinkLog.filter(e => e.retro).forEach(e => {
+        any = true;
+        const row = document.createElement('div'); row.className = 'list-entry';
+        const info = document.createElement('div'); info.className = 'list-entry-info';
+        const name = document.createElement('div'); name.className = 'list-entry-name';
+        name.textContent = e.name + (e.qty > 1 ? ' \u00d7' + e.qty : '');
+        const meta = document.createElement('div'); meta.className = 'list-entry-meta';
+        meta.textContent = d + ' \u00b7 backfilled \u00b7 ~' + (e.grams||0).toFixed(0) + 'g';
+        info.append(name, meta);
+        row.appendChild(info);
+        el.appendChild(row);
+      });
+    }
+    if(!any){
+      const empty = document.createElement('p'); empty.className = 'form-preview'; empty.style.color = 'var(--chalk-dim)';
+      empty.textContent = 'No backfilled entries.';
+      el.appendChild(empty);
+    }
   }
   async function renderDrinksAll(){ renderDrinkEntries(); await renderStreak(); weekDots[todayKey()] = state.dayType; }
   async function renderStreak(){
@@ -1007,12 +1073,53 @@
     const amount = parseFloat(document.getElementById('spendAmount').value);
     const note = document.getElementById('spendNote').value.trim();
     if(!amount || amount <= 0){ toast('Enter an amount'); return; }
-    if(!state.spending) state.spending = [];
-    state.spending.push({ amount, note });
-    await saveSession();
+    const chosenDate = document.getElementById('spendDate').value || todayKey();
+    const entry = { amount, note };
+
+    if(chosenDate === todayKey()){
+      if(!state.spending) state.spending = [];
+      state.spending.push(entry);
+      await saveSession();
+      renderSpending();
+    }else{
+      entry.retro = true;
+      const target = await loadOrCreateSession(chosenDate);
+      if(!target.spending) target.spending = [];
+      target.spending.push(entry);
+      await saveSessionFor(chosenDate, target);
+      await renderSpendRetroLog();
+      toast(fmtWon(amount) + ' logged retroactively for ' + chosenDate);
+    }
     document.getElementById('spendAmount').value = ''; document.getElementById('spendNote').value = '';
     toggleForm('addSpendForm', false);
-    renderSpending();
+  }
+
+  async function renderSpendRetroLog(){
+    const el = document.getElementById('spendRetroLog');
+    el.innerHTML = '';
+    const keys = await safeList('session:');
+    const dates = keys.map(k => k.replace('session:','')).sort().reverse();
+    let any = false;
+    for(const d of dates){
+      const s = await safeGet('session:' + d, null);
+      if(!s || !s.spending) continue;
+      s.spending.filter(e => e.retro).forEach(e => {
+        any = true;
+        const row = document.createElement('div'); row.className = 'list-entry';
+        const info = document.createElement('div'); info.className = 'list-entry-info';
+        const name = document.createElement('div'); name.className = 'list-entry-name'; name.textContent = fmtWon(e.amount);
+        const meta = document.createElement('div'); meta.className = 'list-entry-meta';
+        meta.textContent = d + ' \u00b7 backfilled' + (e.note ? ' \u00b7 ' + e.note : '');
+        info.append(name, meta);
+        row.appendChild(info);
+        el.appendChild(row);
+      });
+    }
+    if(!any){
+      const empty = document.createElement('p'); empty.className = 'form-preview'; empty.style.color = 'var(--chalk-dim)';
+      empty.textContent = 'No backfilled entries.';
+      el.appendChild(empty);
+    }
   }
 
   /* ---------------- DELAY ---------------- */
@@ -1039,7 +1146,7 @@
       const exList = exerciseConfig[s.dayType] || [];
       const exDetail = exList.map(ex => ex.name + '@' + (ex.weight||0) + 'kg:' + ((s.sets||{})[ex.name]||0) + '/' + ex.target).join('; ');
       const totals = drinkTotals(s);
-      const drinkDetail = (s.drinkLog || []).map(e => e.name + ' x' + e.qty + ' (' + e.volume + 'mL, ' + e.abv + '%, ~' + (e.grams||0).toFixed(0) + 'g)').join('; ');
+      const drinkDetail = (s.drinkLog || []).map(e => e.name + ' x' + e.qty + ' (' + e.volume + 'mL, ' + e.abv + '%, ~' + (e.grams||0).toFixed(0) + 'g)' + (e.retro ? ' [retro]' : '')).join('; ');
       const readingDetail = Object.entries(s.reading || {}).map(([id, pages]) => {
         const book = readingConfig.find(b => b.id === id);
         return (book ? book.title : id) + ':+' + pages + 'pp';
@@ -1050,7 +1157,7 @@
       }).join('; ');
       const notesDetail = (s.notes || []).map(n => n.time + ' ' + n.text).join('; ');
       const spendTotal = (s.spending || []).reduce((sum,e) => sum + (e.amount||0), 0);
-      const spendDetail = (s.spending || []).map(e => e.amount + (e.note ? ' (' + e.note + ')' : '')).join('; ');
+      const spendDetail = (s.spending || []).map(e => e.amount + (e.note ? ' (' + e.note + ')' : '') + (e.retro ? ' [retro]' : '')).join('; ');
       rows.push([dateStr, s.dayType, s.pushups||0, exDetail, totals.qty, totals.grams.toFixed(1), drinkDetail, readingDetail, archiveDetail, notesDetail, spendTotal, spendDetail, s.delay||0]);
     }
     const csv = rows.map(row => row.map(csvEscape).join(',')).join('\n');
@@ -1081,7 +1188,9 @@
     await renderNotesEarlier();
     renderDrinkEntries();
     await renderStreak();
+    await renderDrinkRetroLog();
     renderSpending();
+    await renderSpendRetroLog();
     renderDelay();
 
     document.getElementById('btnVirtues').addEventListener('click', () => { navSection='virtues'; navSub=SECTIONS.virtues[0]; renderNav(); });
@@ -1105,13 +1214,22 @@
     document.getElementById('noteAdd').addEventListener('click', addNote);
     document.getElementById('noteInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') addNote(); });
 
-    document.getElementById('addDrinkToggle').addEventListener('click', () => { toggleForm('addDrinkForm', true); populatePresetSelect(); applyPreset('chamisul'); document.getElementById('drinkQty').value = 1; });
+    document.getElementById('addDrinkToggle').addEventListener('click', () => {
+      toggleForm('addDrinkForm', true); populatePresetSelect(); applyPreset('chamisul');
+      document.getElementById('drinkQty').value = 1;
+      const dateEl = document.getElementById('drinkDate');
+      dateEl.max = todayKey(); dateEl.value = todayKey();
+    });
     document.getElementById('drinkCancel').addEventListener('click', () => toggleForm('addDrinkForm', false));
     document.getElementById('drinkConfirm').addEventListener('click', confirmAddDrink);
     document.getElementById('drinkPreset').addEventListener('change', (e) => applyPreset(e.target.value));
     ['drinkVolume','drinkQty','drinkAbv'].forEach(id => document.getElementById(id).addEventListener('input', updateDrinkPreview));
 
-    document.getElementById('addSpendToggle').addEventListener('click', () => toggleForm('addSpendForm', true));
+    document.getElementById('addSpendToggle').addEventListener('click', () => {
+      toggleForm('addSpendForm', true);
+      const dateEl = document.getElementById('spendDate');
+      dateEl.max = todayKey(); dateEl.value = todayKey();
+    });
     document.getElementById('spendCancel').addEventListener('click', () => toggleForm('addSpendForm', false));
     document.getElementById('spendConfirm').addEventListener('click', confirmAddSpend);
 
@@ -1123,13 +1241,6 @@
 
   init();
 })();
-</script>
-<script>
-  if('serviceWorker' in navigator){
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
-  }
 </script>
 </body>
 </html>
