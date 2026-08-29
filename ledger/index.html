@@ -145,7 +145,8 @@
   .exercise{ background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); padding:14px; margin-bottom:10px; display:flex; align-items:center; gap:12px; }
   .exercise.complete{ border-color: var(--olive); }
   .ex-main{ flex:1; min-width:0; }
-  .ex-name{ font-family:'Oswald',sans-serif; font-size:16px; color:var(--chalk); background:transparent; border:none; width:100%; padding:0; outline:none; }
+  .ex-head{ display:flex; align-items:center; gap:4px; }
+  .ex-name{ font-family:'Oswald',sans-serif; font-size:16px; color:var(--chalk); background:transparent; border:none; flex:1; min-width:0; padding:0; outline:none; }
   .ex-target{ display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
   .ex-target span{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--chalk-dim); }
   .ex-target input{ width:32px; background:transparent; border:none; border-bottom:1px solid var(--hairline); color:var(--chalk-dim); font-family:'JetBrains Mono',monospace; font-size:11px; text-align:center; outline:none; }
@@ -768,6 +769,8 @@
       const main = document.createElement('div');
       main.className = 'ex-main';
 
+      const head = document.createElement('div');
+      head.className = 'ex-head';
       const nameInput = document.createElement('input');
       nameInput.className = 'ex-name';
       nameInput.value = ex.name;
@@ -779,6 +782,14 @@
           await saveExerciseConfig(); await saveSession(); renderExercises();
         }
       });
+      const removeEx = document.createElement('button');
+      removeEx.className = 'list-entry-remove'; removeEx.textContent = '\u00d7';
+      removeEx.addEventListener('click', async () => {
+        exerciseConfig[state.dayType] = exerciseConfig[state.dayType].filter(e => e !== ex);
+        delete state.sets[ex.name];
+        await saveExerciseConfig(); await saveSession(); renderExercises();
+      });
+      head.append(nameInput, removeEx);
 
       const targetRow = document.createElement('div');
       targetRow.className = 'ex-target';
@@ -812,7 +823,7 @@
       });
       const kgSpan = document.createElement('span'); kgSpan.textContent = 'kg';
       targetRow.append(targetSpan, targetInput, setsWord, divider1, repsInput, repsWord, divider2, weightSpan, weightInput, kgSpan);
-      main.append(nameInput, targetRow);
+      main.append(head, targetRow);
 
       const counter = document.createElement('div');
       counter.className = 'ex-counter';
